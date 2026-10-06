@@ -87,7 +87,13 @@ export function subscribeMedia(
   const user = auth.currentUser;
   const manager = canManageMedia(user);
   const mediaQuery = !user
-    ? query(collection(db, 'media'), where('visibility', '==', 'public'))
+    ? query(
+      collection(db, 'media'),
+      where('visibility', '==', 'public'),
+      where('kind', '==', 'audio'),
+      where('audioPurpose', '==', 'background'),
+      where('status', '==', 'approved'),
+    )
     : manager
       ? query(collection(db, 'media'))
       : query(collection(db, 'media'), where('status', '==', 'approved'));

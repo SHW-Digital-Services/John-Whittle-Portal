@@ -1,9 +1,11 @@
 import React from 'react';
-import { Send, Heart, Sparkles, Feather, Bell, ArrowRight, Shield, Mic, MessageSquare, Flame, Lock, LogIn, Clock } from 'lucide-react';
+import { Send, Heart, Sparkles, Feather, Bell, ArrowRight, Shield, Mic, MessageSquare, Flame, Lock, LogIn, Clock, CalendarDays, MapPin } from 'lucide-react';
 import { CalligraphyName } from './CalligraphyName';
 import { JohnPortrait } from './JohnPortrait';
 import { NavTab } from './TopBar';
 import { UserProfile } from '../types/memorial';
+
+const serviceStartTime = new Date('2026-10-07T14:00:00+01:00').getTime();
 
 interface LandingPageProps {
   onNavigate: (tab: NavTab) => void;
@@ -18,6 +20,19 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   currentUser,
   isDarkMode,
 }) => {
+  const [serviceHasPassed, setServiceHasPassed] = React.useState(
+    () => Date.now() >= serviceStartTime,
+  );
+
+  React.useEffect(() => {
+    const timeoutId = window.setTimeout(
+      () => setServiceHasPassed(true),
+      Math.max(0, serviceStartTime - Date.now()),
+    );
+
+    return () => window.clearTimeout(timeoutId);
+  }, []);
+
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-12 space-y-12">
       {/* Hero Dedication Section */}
@@ -126,6 +141,29 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           </div>
         )}
       </div>
+
+      <section
+        aria-labelledby="service-details-heading"
+        className="max-w-2xl mx-auto rounded-2xl border border-amber-500/30 bg-gradient-to-br from-amber-950/40 via-neutral-950/80 to-neutral-950/80 p-6 sm:p-8 shadow-xl shadow-amber-950/20"
+      >
+        <div className="text-center space-y-4">
+          <h2 id="service-details-heading" className="font-serif text-xl sm:text-2xl font-semibold text-amber-200">
+            Service Details
+          </h2>
+          <p className="inline-flex items-center justify-center gap-2 text-neutral-100 text-base sm:text-lg leading-relaxed">
+            <CalendarDays className="h-5 w-5 shrink-0 text-amber-300" aria-hidden="true" />
+            <span>
+              The service {serviceHasPassed ? 'was' : 'will be'} held at{' '}
+              <strong>Preston Crematorium</strong> on{' '}
+              <strong>Wednesday 7 October 2026 at 2:00 pm</strong>.
+            </span>
+          </p>
+          <p className="inline-flex items-start justify-center gap-2 text-sm sm:text-base text-neutral-300">
+            <MapPin className="h-5 w-5 shrink-0 text-amber-300" aria-hidden="true" />
+            <span>Longridge Road, Preston, PR2 5BY</span>
+          </p>
+        </div>
+      </section>
 
       {/* Quote Banner */}
       <div className="rounded-2xl border border-neutral-800 bg-neutral-950/60 p-6 text-center space-y-2">

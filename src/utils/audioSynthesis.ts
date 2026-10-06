@@ -22,7 +22,7 @@ function getAudioContext(): AudioContext {
     audioCtx = new AudioContextClass();
   }
   if (audioCtx.state === 'suspended') {
-    audioCtx.resume();
+    void audioCtx.resume().catch(() => undefined);
   }
   return audioCtx;
 }
@@ -86,7 +86,7 @@ export function playSingingBowlChime(fundamental = 216, duration = 4.5, masterGa
  */
 const PENTATONIC_SCALE = [261.63, 293.66, 329.63, 392.0, 440.0, 523.25, 587.33, 659.25];
 
-export function playPentatonicChime(volume = 0.2): void {
+export function playPentatonicChime(volume = 0.2, destination?: AudioNode): void {
   try {
     const ctx = getAudioContext();
     const now = ctx.currentTime;
@@ -103,7 +103,7 @@ export function playPentatonicChime(volume = 0.2): void {
     gain.gain.exponentialRampToValueAtTime(0.0001, now + 3.0);
 
     osc.connect(gain);
-    gain.connect(ctx.destination);
+    gain.connect(destination || ctx.destination);
 
     osc.start(now);
     osc.stop(now + 3.0);
@@ -115,10 +115,13 @@ export function playPentatonicChime(volume = 0.2): void {
 /**
  * Starts continuous meditative ambient temple soundscape
  */
-export function startAmbientSoundscape(volume = 0.3): void {
-  if (isAmbientRunning) return;
+export async function startAmbientSoundscape(volume = 0.3): Promise<boolean> {
+  if (isAmbientRunning) return audioCtx?.state === 'running';
   try {
     const ctx = getAudioContext();
+    if (ctx.state !== 'running') await ctx.resume();
+    if (ctx.state !== 'running') return false;
+
     ambientGainNode = ctx.createGain();
     ambientGainNode.gain.setValueAtTime(volume, ctx.currentTime);
     ambientGainNode.connect(ctx.destination);
@@ -126,15 +129,18 @@ export function startAmbientSoundscape(volume = 0.3): void {
 
     // Periodic gentle chimes in pentatonic harmony
     const triggerChime = () => {
-      if (!isAmbientRunning) return;
-      playPentatonicChime(volume * 0.6);
+      if (!isAmbientRunning || ctx.state !== 'running') return;
+      playPentatonicChime(0.6, ambientGainNode || undefined);
       const nextDelay = 3500 + Math.random() * 5500;
       ambientTimer = window.setTimeout(triggerChime, nextDelay);
     };
 
     triggerChime();
+    return true;
   } catch (err) {
     console.warn('Ambient audio start deferred', err);
+    stopAmbientSoundscape();
+    return false;
   }
 }
 

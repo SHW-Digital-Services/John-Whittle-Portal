@@ -28,7 +28,13 @@ import { auth, testConnection } from './lib/firebase';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { installSingleAudioPlayback } from './utils/audioPlayback';
 
+const serviceWindowStart = new Date('2026-10-07T14:00:00+01:00').getTime();
+const serviceWindowEnd = new Date('2026-10-07T14:30:00+01:00').getTime();
+
 export default function App() {
+  const [isServiceInProgress, setIsServiceInProgress] = useState(
+    () => Date.now() >= serviceWindowStart && Date.now() < serviceWindowEnd,
+  );
   const [activeTab, setActiveTab] = useState<NavTab>('landing');
   const [themeMode, setThemeMode] = useState<ThemeMode>(() => {
     try {
@@ -49,7 +55,7 @@ export default function App() {
   const [isMediaOpen, setIsMediaOpen] = useState(false);
   const [mediaItems, setMediaItems] = useState<MemorialMedia[]>([]);
   const [pendingMediaItems, setPendingMediaItems] = useState<MemorialMedia[]>([]);
-  const [mediaLoading, setMediaLoading] = useState(false);
+  const [mediaLoading, setMediaLoading] = useState(true);
   const [mediaLoadError, setMediaLoadError] = useState('');
   const canManageUploads = canManageMedia(currentUser);
   const backgroundAudioTracks = useMemo(
@@ -77,6 +83,24 @@ export default function App() {
   const isDarkMode = themeMode === 'dark';
 
   useEffect(() => installSingleAudioPlayback(), []);
+
+  useEffect(() => {
+    const now = Date.now();
+    const nextBoundary = now < serviceWindowStart
+      ? serviceWindowStart
+      : now < serviceWindowEnd
+        ? serviceWindowEnd
+        : null;
+
+    if (nextBoundary === null) return;
+
+    const timeoutId = window.setTimeout(() => {
+      const currentTime = Date.now();
+      setIsServiceInProgress(currentTime >= serviceWindowStart && currentTime < serviceWindowEnd);
+    }, Math.max(0, nextBoundary - now));
+
+    return () => window.clearTimeout(timeoutId);
+  }, [isServiceInProgress]);
 
   // Test database connection & listen to Firebase auth
   useEffect(() => {
@@ -148,6 +172,44 @@ export default function App() {
     setBurstCount((prev) => prev + 1);
   };
 
+  if (isServiceInProgress) {
+    return (
+      <>
+        <main className="flex min-h-screen items-center justify-center bg-neutral-950 px-6 text-neutral-100">
+          <section
+            aria-labelledby="service-progress-heading"
+            className="w-full max-w-xl space-y-5 rounded-3xl border border-amber-500/30 bg-gradient-to-b from-neutral-900 via-neutral-950 to-neutral-950 p-8 text-center shadow-2xl shadow-amber-950/20 sm:p-12"
+          >
+            <div className="flex justify-center">
+              <JohnPortrait size="lg" showFrame showSeal />
+            </div>
+            <p className="text-sm font-medium uppercase tracking-[0.2em] text-amber-300">
+              John Alan Whittle
+            </p>
+            <p lang="zh-Hant" className="font-calligraphy text-2xl tracking-widest text-amber-200/90">
+              道氣長存
+            </p>
+            <h1 id="service-progress-heading" className="font-serif text-3xl font-semibold text-amber-100 sm:text-4xl">
+              Service in Progress
+            </h1>
+            <p className="text-base leading-relaxed text-neutral-300 sm:text-lg">
+              The service for John is in progress. Out of respect for John, his family and friends, this site is temporarily unavailable and will reopen at{' '}
+              <time dateTime="2026-10-07T14:30:00+01:00">2:30 pm today</time> when the service finishes.
+            </p>
+          </section>
+        </main>
+        <AudioPlayerBar
+          isDarkMode
+          tracks={backgroundAudioTracks}
+          mediaErrorMessage={mediaLoadError}
+          canUpload={false}
+          onOpenUploads={openMedia}
+          isLoading={mediaLoading}
+        />
+      </>
+    );
+  }
+
   // Unauthenticated visitors can access public pages; all other portals require login.
   const handleTabChange = (tab: NavTab) => {
     if (!currentUser && tab !== 'landing' && tab !== 'condolences' && tab !== 'eulogy') {
@@ -158,6 +220,7 @@ export default function App() {
   };
 
   return (
+    <>
     <div className={`min-h-screen flex flex-col font-sans relative selection:bg-purple-500/30 ${isDarkMode ? 'dark bg-neutral-950 text-neutral-100' : 'bg-stone-50 text-neutral-900'}`}>
       {/* Background Celestial Star & Lantern Canvas */}
       <CelestialSkyCanvas
@@ -319,9 +382,6 @@ export default function App() {
         </div>
       </footer>
 
-      {/* Floating Background Music & Audio Sanctuary Dock */}
-      <AudioPlayerBar key={currentUser?.uid || 'guest'} isDarkMode={isDarkMode} tracks={backgroundAudioTracks} mediaErrorMessage={mediaLoadError} canUpload={canManageUploads} onOpenUploads={openMedia} />
-
       {currentUser && <button type="button" onClick={openMedia} aria-label="Submit a photo or video" title="Share a memory" className="fixed bottom-4 left-4 z-40 flex h-12 w-12 items-center justify-center rounded-full border border-purple-500/50 bg-neutral-900 text-purple-300 shadow-lg hover:bg-purple-900 focus-visible:outline-2 focus-visible:outline-purple-400"><ImagePlus className="h-6 w-6" /></button>}
       {currentUser && isMediaOpen && <MediaUploadModal onClose={closeMedia} isDarkMode={isDarkMode} onGallery={() => { setIsMediaOpen(false); handleTabChange('gallery'); }} />}
 
@@ -334,5 +394,14 @@ export default function App() {
         isDarkMode={isDarkMode}
       />
     </div>
+    <AudioPlayerBar
+      isDarkMode={isDarkMode}
+      tracks={backgroundAudioTracks}
+      mediaErrorMessage={mediaLoadError}
+      canUpload={canManageUploads}
+      onOpenUploads={openMedia}
+      isLoading={mediaLoading}
+    />
+    </>
   );
 }

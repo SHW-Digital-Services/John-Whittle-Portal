@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Volume2, VolumeX, Play, Pause, Upload, Disc } from 'lucide-react';
 import { loadMediaBlob, mediaError, MemorialMedia } from '../lib/media';
+import { setAmbientVolume, startAmbientSoundscape, stopAmbientSoundscape, stopSynthesizedAudio } from '../utils/audioSynthesis';
 
 interface AudioPlayerBarProps {
   isDarkMode: boolean;
@@ -8,23 +9,28 @@ interface AudioPlayerBarProps {
   canUpload: boolean;
   mediaErrorMessage: string;
   onOpenUploads: () => void;
+  isLoading: boolean;
 }
 
-export const AudioPlayerBar: React.FC<AudioPlayerBarProps> = ({ isDarkMode, tracks, canUpload, mediaErrorMessage, onOpenUploads }) => {
+export const AudioPlayerBar: React.FC<AudioPlayerBarProps> = ({ isDarkMode, tracks, canUpload, mediaErrorMessage, onOpenUploads, isLoading }) => {
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [isMuted, setIsMuted] = useState<boolean>(false);
   const [volume, setVolume] = useState<number>(0.5);
   const [customTrackName, setCustomTrackName] = useState<string | null>(null);
   const [customAudioUrl, setCustomAudioUrl] = useState<string | null>(null);
   const [isExpanded, setIsExpanded] = useState<boolean>(false);
+  const [isVolumeControlOpen, setIsVolumeControlOpen] = useState(false);
+  const [isVolumeControlPinned, setIsVolumeControlPinned] = useState(false);
   const [mode, setMode] = useState<'no_track' | 'custom_track'>('no_track');
   const [currentTime, setCurrentTime] = useState<number>(0);
   const [duration, setDuration] = useState<number>(0);
 
   const audioElementRef = useRef<HTMLAudioElement | null>(null);
+  const volumeControlRef = useRef<HTMLDivElement | null>(null);
   const objectUrlRef = useRef<string | null>(null);
   const requestRef = useRef(0);
   const resumeAfterLoadRef = useRef(false);
+  const autoplayAttemptedRef = useRef(false);
   const [trackLoading, setTrackLoading] = useState(false);
   const [trackError, setTrackError] = useState('');
   const [selectedTrackId, setSelectedTrackId] = useState('');
@@ -44,15 +50,26 @@ export const AudioPlayerBar: React.FC<AudioPlayerBarProps> = ({ isDarkMode, trac
       resumeAfterLoadRef.current = resume;
       setCustomAudioUrl(url); setCustomTrackName(item.title); setSelectedTrackId(id);
       setMode('custom_track'); setIsPlaying(false); setCurrentTime(0); setDuration(0);
-    } catch (error) { if (request === requestRef.current) setTrackError(mediaError(error)); }
+    } catch (error) {
+      if (request === requestRef.current) {
+        setTrackError(mediaError(error));
+        void startAmbientSoundscape(isMuted ? 0 : volume).then(setIsPlaying);
+      }
+    }
     finally { if (request === requestRef.current) setTrackLoading(false); }
   };
 
   useEffect(() => {
-    if (tracks.length && !selectedTrackId && !trackLoading && !trackError) {
-      void selectTrack(tracks[0].id, false);
+    if (autoplayAttemptedRef.current || isLoading || trackLoading || trackError) return;
+    autoplayAttemptedRef.current = true;
+
+    if (tracks.length) {
+      void selectTrack(tracks[0].id, true);
+      return;
     }
-  }, [tracks, selectedTrackId, trackLoading, trackError]);
+
+    void startAmbientSoundscape(isMuted ? 0 : volume).then(setIsPlaying);
+  }, [isLoading, tracks, trackLoading, trackError, volume]);
 
   const togglePlay = () => {
     if (mode === 'custom_track' && audioElementRef.current) {
@@ -66,6 +83,14 @@ export const AudioPlayerBar: React.FC<AudioPlayerBarProps> = ({ isDarkMode, trac
           console.warn('Playback blocked', err);
         });
       }
+    } else if (tracks.length === 0) {
+      if (isPlaying) {
+        stopAmbientSoundscape();
+        stopSynthesizedAudio();
+        setIsPlaying(false);
+      } else {
+        void startAmbientSoundscape(isMuted ? 0 : volume).then(setIsPlaying);
+      }
     }
   };
 
@@ -74,6 +99,7 @@ export const AudioPlayerBar: React.FC<AudioPlayerBarProps> = ({ isDarkMode, trac
     if (audioElementRef.current) {
       audioElementRef.current.volume = newVol;
     }
+    setAmbientVolume(newVol);
     if (newVol > 0 && isMuted) {
       setIsMuted(false);
     }
@@ -85,11 +111,13 @@ export const AudioPlayerBar: React.FC<AudioPlayerBarProps> = ({ isDarkMode, trac
       if (audioElementRef.current) {
         audioElementRef.current.volume = volume;
       }
+      setAmbientVolume(volume);
     } else {
       setIsMuted(true);
       if (audioElementRef.current) {
         audioElementRef.current.volume = 0;
       }
+      setAmbientVolume(0);
     }
   };
 
@@ -114,9 +142,25 @@ export const AudioPlayerBar: React.FC<AudioPlayerBarProps> = ({ isDarkMode, trac
   }, [customAudioUrl]);
 
   useEffect(() => {
+    if (!isVolumeControlPinned) return;
+
+    const closeOnOutsideClick = (event: PointerEvent) => {
+      if (event.target instanceof Node && !volumeControlRef.current?.contains(event.target)) {
+        setIsVolumeControlPinned(false);
+        setIsVolumeControlOpen(false);
+      }
+    };
+
+    document.addEventListener('pointerdown', closeOnOutsideClick);
+    return () => document.removeEventListener('pointerdown', closeOnOutsideClick);
+  }, [isVolumeControlPinned]);
+
+  useEffect(() => {
     const audio = audioElementRef;
     return () => {
       audio.current?.pause();
+      stopAmbientSoundscape();
+      stopSynthesizedAudio();
       ++requestRef.current;
       if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current);
     };
@@ -190,13 +234,13 @@ export const AudioPlayerBar: React.FC<AudioPlayerBarProps> = ({ isDarkMode, trac
                 <span className="text-xs font-medium truncate">
                   {mode === 'custom_track' && customTrackName
                     ? customTrackName
-                    : tracks.length ? 'Loading uploaded audio…' : 'No uploaded audio'}
+                    : tracks.length ? 'Loading uploaded audio…' : 'Ambient background music'}
                 </span>
               </div>
               <p className="text-[11px] text-neutral-400 dark:text-neutral-500 truncate">
                 {mode === 'custom_track'
                   ? `Background music · ${formatSeconds(currentTime)} / ${formatSeconds(duration)}`
-                  : 'Uploaded background music will appear here'}
+                  : tracks.length ? 'Loading uploaded background music' : 'Gentle ambient chimes'}
               </p>
             </div>
 
@@ -204,7 +248,7 @@ export const AudioPlayerBar: React.FC<AudioPlayerBarProps> = ({ isDarkMode, trac
             <div className="flex items-center gap-1 shrink-0">
               <button
                 onClick={togglePlay}
-                disabled={!customAudioUrl}
+                disabled={tracks.length > 0 && !customAudioUrl}
                 className="flex h-8 w-8 items-center justify-center rounded-md bg-purple-600 text-white hover:bg-purple-500 transition-colors shadow-sm shadow-purple-600/30"
                 title={isPlaying ? 'Pause Background Music' : 'Play Background Music'}
                 aria-label={isPlaying ? 'Pause music' : 'Play music'}
@@ -212,14 +256,76 @@ export const AudioPlayerBar: React.FC<AudioPlayerBarProps> = ({ isDarkMode, trac
                 {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4 ml-0.5" />}
               </button>
 
-              <button
-                onClick={toggleMute}
-                className="flex h-8 w-8 items-center justify-center rounded-md text-neutral-400 hover:text-neutral-200 transition-colors"
-                title={isMuted ? 'Unmute' : 'Mute'}
-                aria-label={isMuted ? 'Unmute' : 'Mute'}
+              <div
+                ref={volumeControlRef}
+                className="relative"
+                onMouseEnter={() => setIsVolumeControlOpen(true)}
+                onMouseLeave={() => {
+                  if (!isVolumeControlPinned) setIsVolumeControlOpen(false);
+                }}
+                onFocus={() => setIsVolumeControlOpen(true)}
+                onBlur={(event) => {
+                  const nextTarget = event.relatedTarget;
+                  if (!(nextTarget instanceof Node) || !event.currentTarget.contains(nextTarget)) {
+                    if (!isVolumeControlPinned) setIsVolumeControlOpen(false);
+                  }
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === 'Escape') {
+                    setIsVolumeControlPinned(false);
+                    setIsVolumeControlOpen(false);
+                  }
+                }}
               >
-                {isMuted ? <VolumeX className="h-4 w-4 text-red-400" /> : <Volume2 className="h-4 w-4" />}
-              </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const shouldPin = !isVolumeControlPinned;
+                    setIsVolumeControlPinned(shouldPin);
+                    setIsVolumeControlOpen(shouldPin);
+                    toggleMute();
+                  }}
+                  className="flex h-8 w-8 items-center justify-center rounded-md text-neutral-400 hover:text-neutral-200 transition-colors"
+                  title={isMuted ? 'Unmute and show volume' : 'Mute and show volume'}
+                  aria-label={isMuted ? 'Unmute music and show volume' : 'Mute music and show volume'}
+                  aria-expanded={isVolumeControlOpen}
+                  aria-controls="audio-volume-control"
+                >
+                  {isMuted ? <VolumeX className="h-4 w-4 text-red-400" /> : <Volume2 className="h-4 w-4" />}
+                </button>
+                {isVolumeControlOpen && (
+                  <div
+                    id="audio-volume-control"
+                    className={`absolute bottom-full right-0 z-50 w-56 rounded-xl border p-3 shadow-xl ${
+                      isDarkMode
+                        ? 'border-neutral-700 bg-neutral-900 text-neutral-200'
+                        : 'border-stone-200 bg-white text-neutral-800'
+                    }`}
+                    role="group"
+                    aria-label="Background music volume controls"
+                  >
+                    <div className="mb-2 flex items-center justify-between gap-3">
+                      <label htmlFor="audio-quick-volume" className="text-xs font-medium">
+                        Volume
+                      </label>
+                      <span className="text-xs tabular-nums text-neutral-400">
+                        {isMuted ? 'Muted' : `${Math.round(volume * 100)}%`}
+                      </span>
+                    </div>
+                    <input
+                      id="audio-quick-volume"
+                      type="range"
+                      min="0"
+                      max="1"
+                      step="0.05"
+                      value={isMuted ? 0 : volume}
+                      onChange={(event) => handleVolumeChange(Number(event.target.value))}
+                      className="w-full accent-purple-500"
+                      aria-label="Background music volume"
+                    />
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
@@ -284,7 +390,7 @@ export const AudioPlayerBar: React.FC<AudioPlayerBarProps> = ({ isDarkMode, trac
               </div>
 
               <p className="text-[10px] text-neutral-500 dark:text-neutral-400 leading-normal text-center">
-                Only audio uploaded to the database is played. Press Play to start; the playlist repeats automatically.
+                Playback starts automatically when allowed. If your browser blocks autoplay, press Play. Uploaded tracks repeat automatically; ambient chimes play when no tracks are uploaded.
               </p>
             </div>
           )}

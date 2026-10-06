@@ -11,7 +11,7 @@ function Fixture() {
  const [open, setOpen] = useState(false);
  return <><PictureGallery items={items} pendingItems={[]} loading={false} error="" isDarkMode={true} canManage={canUpload} onUpload={() => setOpen(true)} onApprove={async () => {}} onReject={async () => {}} onDelete={async () => {}} />
  {canUpload && <button className="fixed bottom-4 left-4 h-12 w-12 rounded-full bg-neutral-900" aria-label="Submit a photo or video" onClick={() => setOpen(true)}><ImagePlus /></button>}
- <AudioPlayerBar isDarkMode={true} tracks={items.filter(item => item.kind === 'audio')} canUpload={canUpload} mediaErrorMessage="" onOpenUploads={() => setOpen(true)} />
+ <AudioPlayerBar isDarkMode={true} tracks={items.filter(item => item.kind === 'audio')} canUpload={canUpload} mediaErrorMessage="" onOpenUploads={() => setOpen(true)} isLoading={true} />
  {canUpload && open && <MediaUploadModal isDarkMode={true} onClose={() => setOpen(false)} onGallery={() => setOpen(false)} />}</>;
 }
 createRoot(document.getElementById('root')!).render(<Fixture />);
