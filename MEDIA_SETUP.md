@@ -18,6 +18,8 @@ firebase deploy --only firestore:rules,storage --project john-whittle
 
 The rules allow any signed-in user to create photo/video submissions, but only the verified owner can approve or reject them. Pending files are only readable by their uploader and the owner. Approved files remain authenticated-only. The rules do not set media size ceilings.
 
+**If an audio upload reports that the media record could not be saved**, make sure both the current Firestore and Storage rules have been deployed with the command above. Audio records now include `audioPurpose` and `visibility`; outdated Firestore rules reject those fields even if the file itself uploaded successfully. The Storage rules also allow the verified owner to remove an uploaded object whose Firestore record was denied, so deploy both rule sets before retrying.
+
 ### Email notifications
 
 The notification function uses Google Cloud Functions 2nd gen (Node.js 22) and sends mail through Gmail SMTP. Enable the Cloud Functions and Cloud Build APIs if prompted. Create a Google App Password for the sender Gmail account, then configure both values as Firebase Functions secrets. Do not put the app password in source control or a client-side environment variable.

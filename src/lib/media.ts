@@ -60,8 +60,12 @@ export async function uploadMedia(
     try {
       await deleteObject(objectRef);
     } catch (cleanupError) {
-      const detail = cleanupError instanceof Error ? cleanupError.message : String(cleanupError);
-      throw new Error(`The media record could not be saved, and the uploaded file could not be removed: ${detail}`);
+      const cause = error instanceof Error ? error.message : String(error);
+      const cleanup = cleanupError instanceof Error ? cleanupError.message : String(cleanupError);
+      throw new Error(`Could not save the media record: ${cause}. The uploaded file could not be removed: ${cleanup}. Deploy the current Firestore and Storage rules, then retry.`);
+    }
+    if ((error as { code?: string }).code === 'permission-denied') {
+      throw new Error('Firestore denied saving the media record. Deploy the current Firestore rules with "firebase deploy --only firestore:rules,storage --project john-whittle", then retry.');
     }
     throw error;
   }

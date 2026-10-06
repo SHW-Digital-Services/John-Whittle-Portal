@@ -31,7 +31,9 @@ service firebase.storage {
           && isMediaManager()
           && request.resource.contentType in ['audio/mpeg', 'audio/mp4', 'audio/wav', 'audio/x-wav', 'audio/ogg', 'audio/webm', 'audio/flac']));
       allow delete: if isMediaManager()
-        && firestore.get(/databases/(default)/documents/media/$(fileId)).data.status == 'pending';
+        && request.auth.uid == userId
+        && (!firestore.exists(/databases/(default)/documents/media/$(fileId))
+          || firestore.get(/databases/(default)/documents/media/$(fileId)).data.status == 'pending');
       allow update: if false;
     }
     match /{allPaths=**} { allow read, write: if false; }
