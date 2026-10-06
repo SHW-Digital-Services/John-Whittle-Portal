@@ -2,6 +2,8 @@
 
 Any signed-in portal member can submit photos and videos from the Gallery or the floating Share a memory button. Submissions stay private to the uploader and the verified portal owner until approved. The owner reviews and previews submissions in Gallery; approval makes them visible to signed-in members, while rejection removes the stored file and its record. A Google Cloud Function emails `sphw1984@gmail.com` when a photo or video is submitted.
 
+Approved background audio uploaded by the verified owner is also available to signed-out visitors on the home screen player. Only approved background-audio metadata and its audio object are public; altar audio and all photos/videos remain login-gated.
+
 There is no application-imposed file-size limit. Firebase Storage, browser memory, network conditions, account quotas, and Google Cloud billing still apply; large media can use substantial storage, bandwidth, and processing time.
 
 The verified owner account `sphw1984@gmail.com` can also upload audio. Each uploaded track is assigned either to the background music player or to altar interactions. The player loads approved background tracks from Firestore/Cloud Storage and no longer generates placeholder temple audio. On the altar, members can choose an uploaded altar track; it plays when they light incense, ring the bell, offer tea or light a candle, and when a meditation starts or completes. The altar and meditation no longer synthesize their own sound effects. Other portal interactions are unchanged.
@@ -47,7 +49,7 @@ Local development and preview origins are already listed. CORS does not grant fi
 
 ## Existing audio records
 
-After deploying the new Firestore rules, sign in once as the verified owner account and visit the portal. The app marks pre-existing media records as approved so previously uploaded audio continues to appear in the background player. Legacy audio is treated as background music. Other members can see the old tracks after that migration.
+After deploying the new Firestore rules, sign in once as the verified owner account and visit the portal. The app marks pre-existing media records as approved and sets old audio records as public background tracks (altar-specific audio is excluded) so uploaded music is available to signed-out visitors from the home screen. Other media stays private or visible only to signed-in members.
 
 ## Verification
 

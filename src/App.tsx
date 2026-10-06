@@ -63,7 +63,7 @@ export default function App() {
 
   useEffect(() => {
     setMediaItems([]); setPendingMediaItems([]); setMediaLoadError('');
-    if (!currentUser) { setIsMediaOpen(false); setMediaLoading(false); return; }
+    if (!currentUser) setIsMediaOpen(false);
     setMediaLoading(true);
     return subscribeMedia(
       items => { setMediaItems(items); setMediaLoading(false); },
@@ -307,7 +307,7 @@ export default function App() {
       </footer>
 
       {/* Floating Background Music & Audio Sanctuary Dock */}
-      <AudioPlayerBar key={currentUser?.uid || 'guest'} isDarkMode={isDarkMode} tracks={backgroundAudioTracks} isLoggedIn={!!currentUser} mediaErrorMessage={mediaLoadError} canUpload={canManageUploads} onOpenUploads={openMedia} />
+      <AudioPlayerBar key={currentUser?.uid || 'guest'} isDarkMode={isDarkMode} tracks={backgroundAudioTracks} mediaErrorMessage={mediaLoadError} canUpload={canManageUploads} onOpenUploads={openMedia} />
 
       {currentUser && <button type="button" onClick={openMedia} aria-label="Submit a photo or video" title="Share a memory" className="fixed bottom-4 left-4 z-40 flex h-12 w-12 items-center justify-center rounded-full border border-purple-500/50 bg-neutral-900 text-purple-300 shadow-lg hover:bg-purple-900 focus-visible:outline-2 focus-visible:outline-purple-400"><ImagePlus className="h-6 w-6" /></button>}
       {currentUser && isMediaOpen && <MediaUploadModal onClose={closeMedia} isDarkMode={isDarkMode} onGallery={() => { setIsMediaOpen(false); handleTabChange('gallery'); }} />}

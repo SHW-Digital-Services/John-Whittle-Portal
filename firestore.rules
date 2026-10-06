@@ -29,12 +29,16 @@ service cloud.firestore {
 
     // Pending submissions remain private to their uploader and the portal owner.
     match /media/{mediaId} {
-      allow read: if isSignedIn()
-        && (resource.data.get('status', 'approved') == 'approved'
-          || isMediaManager()
-          || (resource.data.ownerId == request.auth.uid && resource.data.status == 'pending'));
+      allow read: if (resource.data.visibility == 'public'
+          && resource.data.kind == 'audio'
+          && resource.data.audioPurpose == 'background'
+          && resource.data.status == 'approved')
+        || (isSignedIn()
+          && (resource.data.get('status', 'approved') == 'approved'
+            || isMediaManager()
+            || (resource.data.ownerId == request.auth.uid && resource.data.status == 'pending')));
       allow create: if isSignedIn()
-        && request.resource.data.keys().hasOnly(['ownerId', 'kind', 'title', 'path', 'contentType', 'size', 'createdAt', 'status', 'approvedAt', 'audioPurpose'])
+        && request.resource.data.keys().hasOnly(['ownerId', 'kind', 'title', 'path', 'contentType', 'size', 'createdAt', 'status', 'approvedAt', 'audioPurpose', 'visibility'])
         && request.resource.data.ownerId == request.auth.uid
         && request.resource.data.kind in ['picture', 'video', 'audio']
         && isValidString(request.resource.data.title, 1, 150)
@@ -56,13 +60,18 @@ service cloud.firestore {
           && request.resource.data.status == 'approved'
           && request.resource.data.approvedAt == request.time
           && request.resource.data.audioPurpose in ['background', 'altar']
+          && ((request.resource.data.audioPurpose == 'background' && request.resource.data.visibility == 'public')
+            || (request.resource.data.audioPurpose == 'altar' && request.resource.data.visibility == 'private'))
           && request.resource.data.contentType in ['audio/mpeg', 'audio/mp4', 'audio/wav', 'audio/x-wav', 'audio/ogg', 'audio/webm', 'audio/flac']
           ));
       allow update: if isMediaManager()
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'approvedAt'])
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'approvedAt', 'visibility'])
         && request.resource.data.status == 'approved'
         && request.resource.data.approvedAt == request.time
-        && (resource.data.status == 'pending' || !resource.data.keys().hasAny(['status']));
+        && request.resource.data.get('visibility', resource.data.get('visibility', 'private')) in ['public', 'private']
+        && (request.resource.data.get('visibility', resource.data.get('visibility', 'private')) == 'private'
+          || (resource.data.kind == 'audio'
+            && resource.data.get('audioPurpose', 'background') == 'background'));
       allow delete: if isMediaManager() && resource.data.status == 'pending';
     }
 
@@ -138,7 +147,7 @@ service cloud.firestore {
         && isValidString(request.resource.data.year, 1, 20)
         && isValidString(request.resource.data.title, 1, 150)
         && isValidString(request.resource.data.description, 1, 3000)
-        && request.resource.data.category in ['martial_arts', 'reiki_healing', 'family', 'wisdom', 'life_journey']
+        && request.resource.data.category in ['family', 'friends', 'life_journey']
         && isValidString(request.resource.data.createdAt, 1, 40);
       allow update: if false;
       allow delete: if isSignedIn() && (resource.data.authorId == request.auth.uid || isMediaManager());

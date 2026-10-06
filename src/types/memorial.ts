@@ -33,7 +33,7 @@ export interface LegacyMilestone {
   date?: string;
   title: string;
   description: string;
-  category: 'martial_arts' | 'reiki_healing' | 'family' | 'wisdom' | 'life_journey';
+  category: 'family' | 'friends' | 'life_journey';
   authorName?: string;
   authorId?: string;
   hanzi?: string;

@@ -26,7 +26,7 @@ export const LegacyTimeline: React.FC<LegacyTimelineProps> = ({
   const [date, setDate] = useState<string>('');
   const [title, setTitle] = useState<string>('');
   const [description, setDescription] = useState<string>('');
-  const [category, setCategory] = useState<LegacyMilestone['category']>('martial_arts');
+  const [category, setCategory] = useState<LegacyMilestone['category']>('family');
   const [hanzi, setHanzi] = useState<string>('武');
 
   // Real-time Firestore subscription
@@ -81,16 +81,14 @@ export const LegacyTimeline: React.FC<LegacyTimelineProps> = ({
 
   const getCategoryDetails = (cat: LegacyMilestone['category']) => {
     switch (cat) {
-      case 'martial_arts':
-        return { label: 'Martial Arts & Kung Fu', icon: '🥋', color: 'text-emerald-400', border: 'border-emerald-500/40', bg: 'bg-emerald-950/20' };
-      case 'reiki_healing':
-        return { label: 'Reiki Energy Healing', icon: '✨', color: 'text-purple-400', border: 'border-purple-500/40', bg: 'bg-purple-950/20' };
       case 'family':
         return { label: 'Family & Loved Ones', icon: '🏮', color: 'text-amber-400', border: 'border-amber-500/40', bg: 'bg-amber-950/20' };
-      case 'wisdom':
-        return { label: 'Philosophy & Teachings', icon: '📜', color: 'text-teal-400', border: 'border-teal-500/40', bg: 'bg-teal-950/20' };
-      default:
+      case 'friends':
+        return { label: 'Friends', icon: '🤝', color: 'text-sky-400', border: 'border-sky-500/40', bg: 'bg-sky-950/20' };
+      case 'life_journey':
         return { label: 'Life Journey', icon: '🌱', color: 'text-neutral-400', border: 'border-neutral-700', bg: 'bg-neutral-900/40' };
+      default:
+        return { label: 'Archived Category', icon: '📜', color: 'text-neutral-400', border: 'border-neutral-700', bg: 'bg-neutral-900/40' };
     }
   };
 
@@ -105,7 +103,7 @@ export const LegacyTimeline: React.FC<LegacyTimelineProps> = ({
         <CalligraphyName
           size="hero"
           honorific="Chronological Legacy Timeline"
-          subtitle="Documenting the milestones, martial journey, and healing memories of John Alan Whittle"
+          subtitle="Documenting the milestones and treasured memories of John Alan Whittle"
         />
 
         <div className="flex flex-wrap items-center justify-center gap-3 pt-4">
@@ -190,7 +188,7 @@ export const LegacyTimeline: React.FC<LegacyTimelineProps> = ({
                   <option value="德">德 (Virtue & Integrity)</option>
                   <option value="仁">仁 (Benevolence)</option>
                   <option value="愛">愛 (Eternal Love)</option>
-                  <option value="光">光 (Master Reiki Light)</option>
+                  <option value="光">光 (Light)</option>
                 </select>
               </div>
             </div>
@@ -205,7 +203,7 @@ export const LegacyTimeline: React.FC<LegacyTimelineProps> = ({
                   required
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="e.g. Earning the Kung Fu Master Sash, First Reiki Attunement..."
+                  placeholder="e.g. A family celebration, a day spent with friends..."
                   className="w-full px-3 py-2 text-xs sm:text-sm rounded-lg border border-neutral-700 bg-neutral-950 text-neutral-100 placeholder:text-neutral-600 focus:outline-none focus:ring-1 focus:ring-purple-500"
                 />
               </div>
@@ -219,10 +217,8 @@ export const LegacyTimeline: React.FC<LegacyTimelineProps> = ({
                   onChange={(e) => setCategory(e.target.value as LegacyMilestone['category'])}
                   className="w-full px-3 py-2 text-xs sm:text-sm rounded-lg border border-neutral-700 bg-neutral-950 text-neutral-100 focus:outline-none focus:ring-1 focus:ring-purple-500"
                 >
-                  <option value="martial_arts">Martial Arts & Kung Fu</option>
-                  <option value="reiki_healing">Reiki Energy Healing</option>
                   <option value="family">Family & Loved Ones</option>
-                  <option value="wisdom">Philosophy & Teachings</option>
+                  <option value="friends">Friends</option>
                   <option value="life_journey">Life Journey</option>
                 </select>
               </div>
@@ -237,7 +233,7 @@ export const LegacyTimeline: React.FC<LegacyTimelineProps> = ({
                 required
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Describe what occurred, John's dedication, words of wisdom, or the memory created on this day..."
+                placeholder="Describe what happened and why this memory matters..."
                 className="w-full px-3 py-2 text-xs sm:text-sm rounded-lg border border-neutral-700 bg-neutral-950 text-neutral-100 placeholder:text-neutral-600 focus:outline-none focus:ring-1 focus:ring-purple-500 leading-relaxed resize-y"
               />
             </div>
@@ -271,10 +267,9 @@ export const LegacyTimeline: React.FC<LegacyTimelineProps> = ({
         <div className="flex flex-wrap items-center gap-1 p-0.5 bg-neutral-950 border border-neutral-800 rounded-lg text-xs">
           {[
             { id: 'all', label: 'All' },
-            { id: 'martial_arts', label: 'Kung Fu' },
-            { id: 'reiki_healing', label: 'Reiki' },
             { id: 'family', label: 'Family' },
-            { id: 'wisdom', label: 'Wisdom' },
+            { id: 'friends', label: 'Friends' },
+            { id: 'life_journey', label: 'Life Journey' },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -299,7 +294,7 @@ export const LegacyTimeline: React.FC<LegacyTimelineProps> = ({
             No Milestones Recorded in Database Yet
           </h4>
           <p className="text-xs text-neutral-500 max-w-sm mx-auto">
-            Click "Add Milestone Memory" above to document significant moments, Kung Fu achievements, and memories of John Alan Whittle.
+            Click "Add Milestone Memory" above to record a significant family, friends, or life journey memory of John Alan Whittle.
           </p>
         </div>
       ) : (

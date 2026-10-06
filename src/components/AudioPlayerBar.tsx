@@ -5,13 +5,12 @@ import { loadMediaBlob, mediaError, MemorialMedia } from '../lib/media';
 interface AudioPlayerBarProps {
   isDarkMode: boolean;
   tracks: MemorialMedia[];
-  isLoggedIn: boolean;
   canUpload: boolean;
   mediaErrorMessage: string;
   onOpenUploads: () => void;
 }
 
-export const AudioPlayerBar: React.FC<AudioPlayerBarProps> = ({ isDarkMode, tracks, isLoggedIn, canUpload, mediaErrorMessage, onOpenUploads }) => {
+export const AudioPlayerBar: React.FC<AudioPlayerBarProps> = ({ isDarkMode, tracks, canUpload, mediaErrorMessage, onOpenUploads }) => {
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [isMuted, setIsMuted] = useState<boolean>(false);
   const [volume, setVolume] = useState<number>(0.5);
@@ -50,10 +49,10 @@ export const AudioPlayerBar: React.FC<AudioPlayerBarProps> = ({ isDarkMode, trac
   };
 
   useEffect(() => {
-    if (isLoggedIn && tracks.length && !selectedTrackId && !trackLoading && !trackError) {
+    if (tracks.length && !selectedTrackId && !trackLoading && !trackError) {
       void selectTrack(tracks[0].id, false);
     }
-  }, [isLoggedIn, tracks, selectedTrackId, trackLoading, trackError]);
+  }, [tracks, selectedTrackId, trackLoading, trackError]);
 
   const togglePlay = () => {
     if (mode === 'custom_track' && audioElementRef.current) {
@@ -274,7 +273,7 @@ export const AudioPlayerBar: React.FC<AudioPlayerBarProps> = ({ isDarkMode, trac
                 </button>
               </div>}
 
-              {isLoggedIn && <div>
+              <div>
                 <label htmlFor="shared-audio-track" className="block text-xs mb-1">Background music</label>
                 <select id="shared-audio-track" value={selectedTrackId} disabled={trackLoading || tracks.length === 0} onChange={e => selectTrack(e.target.value)} className="w-full rounded-lg border border-neutral-600 bg-transparent p-2 text-sm">
                   <option value="" disabled className="text-neutral-900">{tracks.length ? 'Choose a track' : 'No tracks uploaded yet'}</option>
@@ -282,7 +281,7 @@ export const AudioPlayerBar: React.FC<AudioPlayerBarProps> = ({ isDarkMode, trac
                 </select>
                 {trackLoading && <p role="status" className="text-xs mt-2">Loading track…</p>}
                 {(trackError || mediaErrorMessage) && <p role="alert" className="text-xs text-red-500 mt-2">{trackError || mediaErrorMessage}</p>}
-              </div>}
+              </div>
 
               <p className="text-[10px] text-neutral-500 dark:text-neutral-400 leading-normal text-center">
                 Only audio uploaded to the database is played. Press Play to start; the playlist repeats automatically.

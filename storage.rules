@@ -6,12 +6,20 @@ service firebase.storage {
         && request.auth.token.email == 'sphw1984@gmail.com'
         && request.auth.token.email_verified == true;
     }
+    function isPublicBackgroundAudio(fileId) {
+      let media = firestore.get(/databases/(default)/documents/media/$(fileId)).data;
+      return media.status == 'approved'
+        && media.visibility == 'public'
+        && media.kind == 'audio'
+        && media.audioPurpose == 'background';
+    }
     function isApprovedMedia(fileId) {
       return firestore.get(/databases/(default)/documents/media/$(fileId)).data.status == 'approved';
     }
     match /memorial-media/{userId}/{kind}/{fileId} {
-      allow read: if request.auth != null
-        && (request.auth.uid == userId || isMediaManager() || isApprovedMedia(fileId));
+      allow read: if (request.auth != null
+          && (request.auth.uid == userId || isMediaManager() || isApprovedMedia(fileId)))
+        || (kind == 'audio' && isPublicBackgroundAudio(fileId));
       allow create: if request.auth != null && request.auth.uid == userId
         && request.resource.size > 0
         && ((kind == 'picture'

@@ -18,6 +18,7 @@ export interface MemorialMedia {
   createdAt?: { seconds: number; nanoseconds: number };
   status?: 'pending' | 'approved';
   audioPurpose?: 'background' | 'altar';
+  visibility?: 'public' | 'private';
 }
 
 export async function uploadMedia(
@@ -48,7 +49,10 @@ export async function uploadMedia(
       contentType: file.type,
       size: file.size,
       status: kind === 'audio' ? 'approved' : 'pending',
-      ...(kind === 'audio' ? { audioPurpose } : {}),
+      ...(kind === 'audio' ? {
+        audioPurpose,
+        visibility: audioPurpose === 'background' ? 'public' : 'private',
+      } : {}),
       createdAt: serverTimestamp(),
       ...(kind === 'audio' ? { approvedAt: serverTimestamp() } : {}),
     });
@@ -68,11 +72,13 @@ export function subscribeMedia(
   onError: (error: Error) => void,
   onPending: (items: MemorialMedia[]) => void,
 ) {
-  if (!auth.currentUser) { onData([]); onPending([]); return () => {}; }
-  const manager = canManageMedia(auth.currentUser);
-  const mediaQuery = manager
-    ? query(collection(db, 'media'))
-    : query(collection(db, 'media'), where('status', '==', 'approved'));
+  const user = auth.currentUser;
+  const manager = canManageMedia(user);
+  const mediaQuery = !user
+    ? query(collection(db, 'media'), where('visibility', '==', 'public'))
+    : manager
+      ? query(collection(db, 'media'))
+      : query(collection(db, 'media'), where('status', '==', 'approved'));
   const migrating = new Set<string>();
   return onSnapshot(mediaQuery, snapshot => {
     const items = snapshot.docs.map(item => ({ ...item.data(), id: item.id } as MemorialMedia))
@@ -82,10 +88,15 @@ export function subscribeMedia(
     onData(approved);
     onPending(manager ? items.filter(item => item.status === 'pending') : []);
     if (manager) {
-      items.filter(item => item.status === undefined).forEach(item => {
+      items.filter(item => item.status === undefined
+        || (item.kind === 'audio' && item.status === 'approved' && item.visibility === undefined)).forEach(item => {
         if (migrating.has(item.id)) return;
         migrating.add(item.id);
-        void updateDoc(doc(db, 'media', item.id), { status: 'approved', approvedAt: serverTimestamp() })
+        void updateDoc(doc(db, 'media', item.id), {
+          status: 'approved',
+          approvedAt: serverTimestamp(),
+          visibility: item.kind === 'audio' && item.audioPurpose !== 'altar' ? 'public' : 'private',
+        })
           .catch(onError)
           .finally(() => migrating.delete(item.id));
       });
@@ -94,7 +105,12 @@ export function subscribeMedia(
 }
 
 export async function loadMediaBlob(item: MemorialMedia) {
-  if (!auth.currentUser) throw new Error('Please log in to view media.');
+  if (!auth.currentUser && (
+    item.kind !== 'audio'
+    || item.audioPurpose !== 'background'
+    || item.status !== 'approved'
+    || item.visibility !== 'public'
+  )) throw new Error('Please log in to view this media.');
   if (!item.path.startsWith('memorial-media/')) throw new Error('Invalid media path.');
   return getBlob(ref(mediaStorage, item.path));
 }
