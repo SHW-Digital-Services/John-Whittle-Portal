@@ -223,6 +223,7 @@ export default function App() {
               <SentJournal
                 onBackToPortal={() => setActiveTab('portal')}
                 isDarkMode={isDarkMode}
+                currentUser={currentUser}
               />
             )}
 

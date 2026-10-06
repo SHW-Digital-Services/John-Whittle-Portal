@@ -98,9 +98,10 @@ service cloud.firestore {
       allow read, write: if isOwner(userId);
     }
 
-    // Messages are visible only inside the signed-in portal.
+    // Messages are private to their sender and the verified portal owner.
     match /messages/{messageId} {
-      allow read: if isSignedIn();
+      allow read: if isSignedIn()
+        && (isMediaManager() || resource.data.senderId == request.auth.uid);
       allow create: if isSignedIn()
         && request.resource.data.keys().hasOnly(['senderId', 'senderName', 'senderRelationship', 'type', 'content', 'audioBlobUrl', 'audioDurationSeconds', 'offering', 'category', 'createdAt'])
         && request.resource.data.senderId == request.auth.uid
@@ -115,7 +116,8 @@ service cloud.firestore {
           || (request.resource.data.type == 'voice' && isValidString(request.resource.data.audioBlobUrl, 1, 900000)
           && request.resource.data.audioDurationSeconds is number && request.resource.data.audioDurationSeconds >= 0
           && !request.resource.data.keys().hasAny(['content'])));
-      allow delete: if isSignedIn() && resource.data.senderId == request.auth.uid;
+      allow delete: if isSignedIn()
+        && (isMediaManager() || resource.data.senderId == request.auth.uid);
       allow update: if false;
     }
 

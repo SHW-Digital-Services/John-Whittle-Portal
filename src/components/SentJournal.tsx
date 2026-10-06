@@ -1,25 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import { Volume2, Play, Pause, Trash2, ArrowLeft, Calendar, User, Sparkles, Feather, Heart } from 'lucide-react';
-import { CelestialMessage } from '../types/memorial';
+import { CelestialMessage, UserProfile } from '../types/memorial';
 import { CalligraphyName } from './CalligraphyName';
 import { JohnPortrait } from './JohnPortrait';
 import { subscribeToMessages, deleteCelestialMessage } from '../services/dbService';
+import { canManageMedia } from '../lib/mediaAccess';
 
 interface SentJournalProps {
   onBackToPortal: () => void;
   isDarkMode: boolean;
+  currentUser: UserProfile;
 }
 
-export const SentJournal: React.FC<SentJournalProps> = ({ onBackToPortal, isDarkMode }) => {
+export const SentJournal: React.FC<SentJournalProps> = ({ onBackToPortal, isDarkMode, currentUser }) => {
   const [messages, setMessages] = useState<CelestialMessage[]>([]);
   const [filterType, setFilterType] = useState<'all' | 'text' | 'voice'>('all');
+  const canViewAllMessages = canManageMedia(currentUser);
 
   useEffect(() => {
-    const unsubscribe = subscribeToMessages((updated) => {
+    const unsubscribe = subscribeToMessages(currentUser.uid, canViewAllMessages, (updated) => {
       setMessages(updated);
     });
     return () => unsubscribe();
-  }, []);
+  }, [currentUser.uid, canViewAllMessages]);
 
   const handleDelete = async (id: string) => {
     if (window.confirm('Remove this message from the journal?')) {
@@ -83,6 +86,9 @@ export const SentJournal: React.FC<SentJournalProps> = ({ onBackToPortal, isDark
           <p className="text-xs text-neutral-400 mt-1">
             A sacred archive of every word, prayer, and voice recording sent to{' '}
             <span className="font-semibold text-neutral-200">John Alan Whittle</span>
+          </p>
+          <p className="text-xs text-neutral-500 mt-1">
+            Your messages are private to you and the verified portal owner.
           </p>
         </div>
 

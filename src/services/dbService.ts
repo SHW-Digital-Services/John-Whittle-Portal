@@ -13,6 +13,7 @@ import {
   query,
   orderBy,
   limit,
+  where,
 } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase';
 import { CelestialMessage, Condolence, LegacyMilestone, MemorialShrineState } from '../types/memorial';
@@ -34,16 +35,23 @@ const SHRINE_DOC = 'shrine';
 
 // Save a message to Firestore & localStorage
 export async function createCelestialMessage(msg: Omit<CelestialMessage, 'id'>): Promise<string> {
+  const currentUser = auth.currentUser;
+  if (!currentUser) {
+    throw new Error('You must be signed in to send a message.');
+  }
+
   try {
-    const payload = Object.fromEntries(Object.entries(msg).filter(([, value]) => value !== undefined));
+    const payload = Object.fromEntries(
+      Object.entries({ ...msg, senderId: currentUser.uid }).filter(([, value]) => value !== undefined),
+    );
     const docRef = await addDoc(collection(db, MESSAGES_COL), payload);
-    const fullMsg: CelestialMessage = { ...msg, id: docRef.id };
+    const fullMsg: CelestialMessage = { ...msg, senderId: currentUser.uid, id: docRef.id };
     saveLocalMessage(fullMsg);
     return docRef.id;
   } catch (err) {
     console.warn('Saving to local storage fallback due to Firestore error', err);
     const localId = `msg-${Date.now()}`;
-    saveLocalMessage({ ...msg, id: localId });
+    saveLocalMessage({ ...msg, senderId: currentUser.uid, id: localId });
     return localId;
   }
 }
@@ -59,11 +67,25 @@ export async function deleteCelestialMessage(id: string): Promise<void> {
 }
 
 // Listen to messages in real-time
-export function subscribeToMessages(onUpdate: (messages: CelestialMessage[]) => void): () => void {
+export function subscribeToMessages(
+  userId: string,
+  canViewAllMessages: boolean,
+  onUpdate: (messages: CelestialMessage[]) => void,
+): () => void {
+  const getVisibleStoredMessages = () =>
+    getStoredMessages().filter((message) => canViewAllMessages || message.senderId === userId);
+
   try {
-    const q = query(collection(db, MESSAGES_COL), orderBy('createdAt', 'desc'), limit(100));
+    const messagesQuery = canViewAllMessages
+      ? query(collection(db, MESSAGES_COL), orderBy('createdAt', 'desc'), limit(100))
+      : query(
+        collection(db, MESSAGES_COL),
+        where('senderId', '==', userId),
+        orderBy('createdAt', 'desc'),
+        limit(100),
+      );
     return onSnapshot(
-      q,
+      messagesQuery,
       (snapshot) => {
         if (!snapshot.empty) {
           const remoteMsgs: CelestialMessage[] = snapshot.docs.map((docSnap) => ({
@@ -72,16 +94,17 @@ export function subscribeToMessages(onUpdate: (messages: CelestialMessage[]) => 
           }));
           onUpdate(remoteMsgs);
         } else {
-          onUpdate(getStoredMessages());
+          onUpdate(getVisibleStoredMessages());
         }
       },
       (error) => {
         console.warn('Real-time message subscription error, using local storage', error);
-        onUpdate(getStoredMessages());
+        onUpdate(getVisibleStoredMessages());
       }
     );
-  } catch {
-    onUpdate(getStoredMessages());
+  } catch (error) {
+    console.warn('Could not subscribe to messages; using local storage', error);
+    onUpdate(getVisibleStoredMessages());
     return () => {};
   }
 }
