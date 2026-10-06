@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Volume2, VolumeX, Play, Pause, Music, Upload, Sparkles, Disc, RefreshCw } from 'lucide-react';
+import { Volume2, VolumeX, Play, Pause, Upload, Disc } from 'lucide-react';
 import { loadMediaBlob, mediaError, MemorialMedia } from '../lib/media';
-import { startAmbientSoundscape, stopAmbientSoundscape, setAmbientVolume } from '../utils/audioSynthesis';
 
 interface AudioPlayerBarProps {
   isDarkMode: boolean;
@@ -19,7 +18,7 @@ export const AudioPlayerBar: React.FC<AudioPlayerBarProps> = ({ isDarkMode, trac
   const [customTrackName, setCustomTrackName] = useState<string | null>(null);
   const [customAudioUrl, setCustomAudioUrl] = useState<string | null>(null);
   const [isExpanded, setIsExpanded] = useState<boolean>(false);
-  const [mode, setMode] = useState<'ambient_zen' | 'custom_track'>('ambient_zen');
+  const [mode, setMode] = useState<'no_track' | 'custom_track'>('no_track');
   const [currentTime, setCurrentTime] = useState<number>(0);
   const [duration, setDuration] = useState<number>(0);
 
@@ -43,7 +42,6 @@ export const AudioPlayerBar: React.FC<AudioPlayerBarProps> = ({ isDarkMode, trac
       const url = URL.createObjectURL(blob);
       objectUrlRef.current = url;
       audioElementRef.current?.pause();
-      stopAmbientSoundscape();
       resumeAfterLoadRef.current = resume;
       setCustomAudioUrl(url); setCustomTrackName(item.title); setSelectedTrackId(id);
       setMode('custom_track'); setIsPlaying(false); setCurrentTime(0); setDuration(0);
@@ -69,14 +67,6 @@ export const AudioPlayerBar: React.FC<AudioPlayerBarProps> = ({ isDarkMode, trac
           console.warn('Playback blocked', err);
         });
       }
-    } else {
-      if (isPlaying) {
-        stopAmbientSoundscape();
-        setIsPlaying(false);
-      } else {
-        startAmbientSoundscape(isMuted ? 0 : volume);
-        setIsPlaying(true);
-      }
     }
   };
 
@@ -85,7 +75,6 @@ export const AudioPlayerBar: React.FC<AudioPlayerBarProps> = ({ isDarkMode, trac
     if (audioElementRef.current) {
       audioElementRef.current.volume = newVol;
     }
-    setAmbientVolume(newVol);
     if (newVol > 0 && isMuted) {
       setIsMuted(false);
     }
@@ -97,13 +86,11 @@ export const AudioPlayerBar: React.FC<AudioPlayerBarProps> = ({ isDarkMode, trac
       if (audioElementRef.current) {
         audioElementRef.current.volume = volume;
       }
-      setAmbientVolume(volume);
     } else {
       setIsMuted(true);
       if (audioElementRef.current) {
         audioElementRef.current.volume = 0;
       }
-      setAmbientVolume(0);
     }
   };
 
@@ -131,7 +118,6 @@ export const AudioPlayerBar: React.FC<AudioPlayerBarProps> = ({ isDarkMode, trac
     const audio = audioElementRef;
     return () => {
       audio.current?.pause();
-      stopAmbientSoundscape();
       ++requestRef.current;
       if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current);
     };
@@ -205,13 +191,13 @@ export const AudioPlayerBar: React.FC<AudioPlayerBarProps> = ({ isDarkMode, trac
                 <span className="text-xs font-medium truncate">
                   {mode === 'custom_track' && customTrackName
                     ? customTrackName
-                    : 'Tranquil Temple Resonance'}
+                    : tracks.length ? 'Loading uploaded audio…' : 'No uploaded audio'}
                 </span>
               </div>
               <p className="text-[11px] text-neutral-400 dark:text-neutral-500 truncate">
                 {mode === 'custom_track'
                   ? `Background music · ${formatSeconds(currentTime)} / ${formatSeconds(duration)}`
-                  : 'Harmonic Tibetan & Pentatonic Chimes'}
+                  : 'Uploaded background music will appear here'}
               </p>
             </div>
 
@@ -219,6 +205,7 @@ export const AudioPlayerBar: React.FC<AudioPlayerBarProps> = ({ isDarkMode, trac
             <div className="flex items-center gap-1 shrink-0">
               <button
                 onClick={togglePlay}
+                disabled={!customAudioUrl}
                 className="flex h-8 w-8 items-center justify-center rounded-md bg-purple-600 text-white hover:bg-purple-500 transition-colors shadow-sm shadow-purple-600/30"
                 title={isPlaying ? 'Pause Background Music' : 'Play Background Music'}
                 aria-label={isPlaying ? 'Pause music' : 'Play music'}
@@ -277,38 +264,15 @@ export const AudioPlayerBar: React.FC<AudioPlayerBarProps> = ({ isDarkMode, trac
                 </span>
               </div>
 
-              {/* Mode Selection */}
-              <div className="grid grid-cols-2 gap-2 text-xs">
+              {canUpload && <div>
                 <button
-                  onClick={() => {
-                    if (audioElementRef.current) audioElementRef.current.pause();
-                    ++requestRef.current; resumeAfterLoadRef.current = false; setTrackLoading(false);
-                    stopAmbientSoundscape(); setIsPlaying(false);
-                    setMode('ambient_zen');
-
-                  }}
-                  className={`px-2.5 py-1.5 rounded-md flex items-center justify-center gap-1.5 transition-colors font-medium ${
-                    mode === 'ambient_zen'
-                      ? 'bg-purple-600/20 text-purple-300 border border-purple-500/40'
-                      : 'bg-neutral-800/50 text-neutral-400 hover:text-neutral-200'
-                  }`}
-                >
-                  <Sparkles className="h-3.5 w-3.5 text-purple-400" />
-                  Zen Temple Chimes
-                </button>
-
-                {canUpload && <button
                   onClick={onOpenUploads}
-                  className={`px-2.5 py-1.5 rounded-md flex items-center justify-center gap-1.5 transition-colors font-medium ${
-                    mode === 'custom_track'
-                      ? 'bg-emerald-600/20 text-emerald-300 border border-emerald-500/40'
-                      : 'bg-neutral-800/50 text-neutral-400 hover:text-neutral-200'
-                  }`}
+                  className="w-full px-2.5 py-1.5 rounded-md flex items-center justify-center gap-1.5 transition-colors font-medium bg-neutral-800/50 text-neutral-400 hover:text-neutral-200"
                 >
                   <Upload className="h-3.5 w-3.5 text-emerald-400" />
                   Upload tracks
-                </button>}
-              </div>
+                </button>
+              </div>}
 
               {isLoggedIn && <div>
                 <label htmlFor="shared-audio-track" className="block text-xs mb-1">Background music</label>
@@ -316,13 +280,12 @@ export const AudioPlayerBar: React.FC<AudioPlayerBarProps> = ({ isDarkMode, trac
                   <option value="" disabled className="text-neutral-900">{tracks.length ? 'Choose a track' : 'No tracks uploaded yet'}</option>
                   {tracks.map(track => <option key={track.id} value={track.id} className="text-neutral-900">{track.title}</option>)}
                 </select>
-                {mode === 'ambient_zen' && selectedTrackId && <button type="button" onClick={() => selectTrack(selectedTrackId)} className="text-xs text-purple-500 underline mt-2">Load selected track</button>}
                 {trackLoading && <p role="status" className="text-xs mt-2">Loading track…</p>}
                 {(trackError || mediaErrorMessage) && <p role="alert" className="text-xs text-red-500 mt-2">{trackError || mediaErrorMessage}</p>}
               </div>}
 
               <p className="text-[10px] text-neutral-500 dark:text-neutral-400 leading-normal text-center">
-                Uploaded tracks play as background music across the site. Press Play to start; the playlist repeats automatically. 
+                Only audio uploaded to the database is played. Press Play to start; the playlist repeats automatically.
               </p>
             </div>
           )}

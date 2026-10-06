@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { TopBar, NavTab } from './components/TopBar';
 import { LandingPage } from './components/LandingPage';
 import { CelestialPortal } from './components/CelestialPortal';
@@ -16,11 +16,11 @@ import { AudioPlayerBar } from './components/AudioPlayerBar';
 import { CelestialSkyCanvas } from './components/CelestialSkyCanvas';
 import { CalligraphyName } from './components/CalligraphyName';
 import { JohnPortrait } from './components/JohnPortrait';
-import { Settings } from 'lucide-react';
+import { ImagePlus } from 'lucide-react';
 import { MediaUploadModal } from './components/MediaUploadModal';
 import { PictureGallery } from './components/PictureGallery';
 import { canManageMedia } from './lib/mediaAccess';
-import { mediaError, MemorialMedia, subscribeMedia } from './lib/media';
+import { approveMedia, mediaError, MemorialMedia, rejectMedia, subscribeMedia } from './lib/media';
 import { AuthModal } from './components/AuthModal';
 import { OfferingType, ThemeMode, UserProfile } from './types/memorial';
 import { auth, testConnection } from './lib/firebase';
@@ -46,17 +46,30 @@ export default function App() {
 
   const [isMediaOpen, setIsMediaOpen] = useState(false);
   const [mediaItems, setMediaItems] = useState<MemorialMedia[]>([]);
+  const [pendingMediaItems, setPendingMediaItems] = useState<MemorialMedia[]>([]);
   const [mediaLoading, setMediaLoading] = useState(false);
   const [mediaLoadError, setMediaLoadError] = useState('');
-  const canUploadMedia = canManageMedia(currentUser);
-  const openMedia = () => { if (canManageMedia(auth.currentUser)) setIsMediaOpen(true); };
+  const canManageUploads = canManageMedia(currentUser);
+  const backgroundAudioTracks = useMemo(
+    () => mediaItems.filter(item => item.kind === 'audio' && (item.audioPurpose || 'background') === 'background'),
+    [mediaItems],
+  );
+  const altarAudioTracks = useMemo(
+    () => mediaItems.filter(item => item.kind === 'audio' && item.audioPurpose === 'altar'),
+    [mediaItems],
+  );
+  const openMedia = () => { if (auth.currentUser) setIsMediaOpen(true); else setIsAuthOpen(true); };
   const closeMedia = useCallback(() => setIsMediaOpen(false), []);
 
   useEffect(() => {
-    setMediaItems([]); setMediaLoadError('');
+    setMediaItems([]); setPendingMediaItems([]); setMediaLoadError('');
     if (!currentUser) { setIsMediaOpen(false); setMediaLoading(false); return; }
     setMediaLoading(true);
-    return subscribeMedia(items => { setMediaItems(items); setMediaLoading(false); }, error => { setMediaLoadError(mediaError(error)); setMediaLoading(false); });
+    return subscribeMedia(
+      items => { setMediaItems(items); setMediaLoading(false); },
+      error => { setMediaLoadError(mediaError(error)); setMediaLoading(false); },
+      items => setPendingMediaItems(items),
+    );
   }, [currentUser?.uid]);
 
   const isDarkMode = themeMode === 'dark';
@@ -227,7 +240,17 @@ export default function App() {
             )}
 
             {activeTab === 'gallery' && (
-              <PictureGallery items={mediaItems} loading={mediaLoading} error={mediaLoadError} isDarkMode={isDarkMode} canUpload={canUploadMedia} onUpload={openMedia} />
+              <PictureGallery
+                items={mediaItems}
+                pendingItems={pendingMediaItems}
+                loading={mediaLoading}
+                error={mediaLoadError}
+                isDarkMode={isDarkMode}
+                canManage={canManageUploads}
+                onUpload={openMedia}
+                onApprove={approveMedia}
+                onReject={rejectMedia}
+              />
             )}
 
             {activeTab === 'heritage' && (
@@ -238,6 +261,7 @@ export default function App() {
               <MemorialAltar
                 isDarkMode={isDarkMode}
                 onOfferingAscended={() => handleAscendOffering('incense')}
+                audioTracks={altarAudioTracks}
               />
             )}
           </>
@@ -283,10 +307,10 @@ export default function App() {
       </footer>
 
       {/* Floating Background Music & Audio Sanctuary Dock */}
-      <AudioPlayerBar key={currentUser?.uid || 'guest'} isDarkMode={isDarkMode} tracks={mediaItems.filter(item => item.kind === 'audio')} isLoggedIn={!!currentUser} mediaErrorMessage={mediaLoadError} canUpload={canUploadMedia} onOpenUploads={openMedia} />
+      <AudioPlayerBar key={currentUser?.uid || 'guest'} isDarkMode={isDarkMode} tracks={backgroundAudioTracks} isLoggedIn={!!currentUser} mediaErrorMessage={mediaLoadError} canUpload={canManageUploads} onOpenUploads={openMedia} />
 
-      {canUploadMedia && <button type="button" onClick={openMedia} aria-label="Open picture and audio uploads" title="Pictures & Audio" className="fixed bottom-4 left-4 z-40 flex h-12 w-12 items-center justify-center rounded-full border border-purple-500/50 bg-neutral-900 text-purple-300 shadow-lg hover:bg-purple-900 focus-visible:outline-2 focus-visible:outline-purple-400"><Settings className="h-6 w-6" /></button>}
-      {canUploadMedia && isMediaOpen && <MediaUploadModal onClose={closeMedia} isDarkMode={isDarkMode} onGallery={() => { setIsMediaOpen(false); handleTabChange('gallery'); }} />}
+      {currentUser && <button type="button" onClick={openMedia} aria-label="Submit a photo or video" title="Share a memory" className="fixed bottom-4 left-4 z-40 flex h-12 w-12 items-center justify-center rounded-full border border-purple-500/50 bg-neutral-900 text-purple-300 shadow-lg hover:bg-purple-900 focus-visible:outline-2 focus-visible:outline-purple-400"><ImagePlus className="h-6 w-6" /></button>}
+      {currentUser && isMediaOpen && <MediaUploadModal onClose={closeMedia} isDarkMode={isDarkMode} onGallery={() => { setIsMediaOpen(false); handleTabChange('gallery'); }} />}
 
       {/* Auth Modal for Sign Up / Login and Identity Autofill */}
       <AuthModal

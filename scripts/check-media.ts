@@ -1,18 +1,18 @@
 import assert from 'node:assert/strict';
-import { AUDIO_LIMIT, IMAGE_LIMIT, validateMedia } from '../src/lib/mediaValidation';
+import { validateMedia } from '../src/lib/mediaValidation';
 const image = (size: number, type = 'image/jpeg') => new File([new Uint8Array(size)], 'picture.jpg', { type });
+const video = (size: number, type = 'video/mp4') => new File([new Uint8Array(size)], 'clip.mp4', { type });
 const audio = (size: number, type = 'audio/mpeg') => new File([new Uint8Array(size)], 'track.mp3', { type });
-assert.doesNotThrow(() => validateMedia(image(IMAGE_LIMIT), 'picture'));
-assert.throws(() => validateMedia(image(IMAGE_LIMIT + 1), 'picture'), /10 MB/);
-assert.throws(() => validateMedia(image(0), 'picture'), /10 MB/);
+assert.doesNotThrow(() => validateMedia(image(11 * 1024 * 1024), 'picture'));
+assert.doesNotThrow(() => validateMedia(video(51 * 1024 * 1024), 'video'));
+assert.doesNotThrow(() => validateMedia(audio(51 * 1024 * 1024), 'audio'));
+assert.throws(() => validateMedia(image(0), 'picture'), /empty/);
 assert.throws(() => validateMedia(image(10, 'image/svg+xml'), 'picture'), /supported/);
-assert.doesNotThrow(() => validateMedia(audio(AUDIO_LIMIT), 'audio'));
-assert.throws(() => validateMedia(audio(AUDIO_LIMIT + 1), 'audio'), /50 MB/);
-assert.throws(() => validateMedia(audio(0), 'audio'), /50 MB/);
+assert.throws(() => validateMedia(audio(0), 'audio'), /empty/);
 assert.throws(() => validateMedia(audio(10, 'text/html'), 'audio'), /supported/);
 assert.throws(() => validateMedia(audio(10), 'picture'), /supported/);
 assert.throws(() => validateMedia(image(10), 'audio'), /supported/);
-console.log('Passed 10 media file validation checks.');
+console.log('Passed media type and no-size-cap checks.');
 
 import { canManageMedia } from '../src/lib/mediaAccess';
 assert.equal(canManageMedia(null), false);

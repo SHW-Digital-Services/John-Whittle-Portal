@@ -1,23 +1,35 @@
-import { collection, doc, onSnapshot, orderBy, query, serverTimestamp, setDoc } from 'firebase/firestore';
+import { collection, deleteDoc, doc, onSnapshot, query, serverTimestamp, setDoc, updateDoc, where } from 'firebase/firestore';
 import { deleteObject, getBlob, ref, uploadBytesResumable } from 'firebase/storage';
 import { canManageMedia } from './mediaAccess';
 import { auth, db, mediaStorage } from './firebase';
-import { AUDIO_LIMIT, IMAGE_LIMIT, validateMedia } from './mediaValidation';
-export { AUDIO_TYPES, IMAGE_TYPES, AUDIO_LIMIT, IMAGE_LIMIT, validateMedia } from './mediaValidation';
+import { validateMedia } from './mediaValidation';
+import type { MediaKind } from './mediaValidation';
+export { AUDIO_TYPES, IMAGE_TYPES, validateMedia } from './mediaValidation';
+export type { MediaKind } from './mediaValidation';
 
 export interface MemorialMedia {
   id: string;
   ownerId: string;
   title: string;
-  kind: 'picture' | 'audio';
+  kind: MediaKind;
   path: string;
   contentType: string;
   size: number;
+  createdAt?: { seconds: number; nanoseconds: number };
+  status?: 'pending' | 'approved';
+  audioPurpose?: 'background' | 'altar';
 }
 
-export async function uploadMedia(file: File, kind: MemorialMedia['kind'], title: string, onProgress: (value: number) => void) {
+export async function uploadMedia(
+  file: File,
+  kind: MediaKind,
+  title: string,
+  onProgress: (value: number) => void,
+  audioPurpose: 'background' | 'altar' = 'background',
+) {
   const user = auth.currentUser;
-  if (!user || !canManageMedia(user)) throw new Error('Only the verified portal owner can upload pictures or audio.');
+  if (!user) throw new Error('Please sign in before uploading media.');
+  if (kind === 'audio' && !canManageMedia(user)) throw new Error('Only the verified portal owner can upload audio.');
   validateMedia(file, kind);
   const mediaDoc = doc(collection(db, 'media'));
   const path = `memorial-media/${user.uid}/${kind}/${mediaDoc.id}`;
@@ -28,24 +40,82 @@ export async function uploadMedia(file: File, kind: MemorialMedia['kind'], title
   });
   try {
     if (auth.currentUser?.uid !== user.uid) throw new Error('Your session changed. Please log in and try again.');
-    await setDoc(mediaDoc, { ownerId: user.uid, kind, title: title.trim().slice(0, 150) || file.name.slice(0, 150), path, contentType: file.type, size: file.size, createdAt: serverTimestamp() });
+    await setDoc(mediaDoc, {
+      ownerId: user.uid,
+      kind,
+      title: title.trim().slice(0, 150) || file.name.slice(0, 150),
+      path,
+      contentType: file.type,
+      size: file.size,
+      status: kind === 'audio' ? 'approved' : 'pending',
+      ...(kind === 'audio' ? { audioPurpose } : {}),
+      createdAt: serverTimestamp(),
+      ...(kind === 'audio' ? { approvedAt: serverTimestamp() } : {}),
+    });
   } catch (error) {
-    await deleteObject(objectRef).catch(() => {});
+    try {
+      await deleteObject(objectRef);
+    } catch (cleanupError) {
+      const detail = cleanupError instanceof Error ? cleanupError.message : String(cleanupError);
+      throw new Error(`The media record could not be saved, and the uploaded file could not be removed: ${detail}`);
+    }
     throw error;
   }
 }
 
-export function subscribeMedia(onData: (items: MemorialMedia[]) => void, onError: (error: Error) => void) {
-  if (!auth.currentUser) { onData([]); return () => {}; }
-  return onSnapshot(query(collection(db, 'media'), orderBy('createdAt', 'desc')), snapshot => {
-    onData(snapshot.docs.map(item => ({ ...item.data(), id: item.id } as MemorialMedia)));
+export function subscribeMedia(
+  onData: (items: MemorialMedia[]) => void,
+  onError: (error: Error) => void,
+  onPending: (items: MemorialMedia[]) => void,
+) {
+  if (!auth.currentUser) { onData([]); onPending([]); return () => {}; }
+  const manager = canManageMedia(auth.currentUser);
+  const mediaQuery = manager
+    ? query(collection(db, 'media'))
+    : query(collection(db, 'media'), where('status', '==', 'approved'));
+  const migrating = new Set<string>();
+  return onSnapshot(mediaQuery, snapshot => {
+    const items = snapshot.docs.map(item => ({ ...item.data(), id: item.id } as MemorialMedia))
+      .sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)
+        || (b.createdAt?.nanoseconds || 0) - (a.createdAt?.nanoseconds || 0));
+    const approved = items.filter(item => item.status === 'approved' || item.status === undefined);
+    onData(approved);
+    onPending(manager ? items.filter(item => item.status === 'pending') : []);
+    if (manager) {
+      items.filter(item => item.status === undefined).forEach(item => {
+        if (migrating.has(item.id)) return;
+        migrating.add(item.id);
+        void updateDoc(doc(db, 'media', item.id), { status: 'approved', approvedAt: serverTimestamp() })
+          .catch(onError)
+          .finally(() => migrating.delete(item.id));
+      });
+    }
   }, onError);
 }
 
 export async function loadMediaBlob(item: MemorialMedia) {
   if (!auth.currentUser) throw new Error('Please log in to view media.');
   if (!item.path.startsWith('memorial-media/')) throw new Error('Invalid media path.');
-  return getBlob(ref(mediaStorage, item.path), item.kind === 'picture' ? IMAGE_LIMIT : AUDIO_LIMIT);
+  return getBlob(ref(mediaStorage, item.path));
+}
+
+export async function approveMedia(item: MemorialMedia) {
+  const user = auth.currentUser;
+  if (!user || !canManageMedia(user)) throw new Error('Only the verified portal owner can approve submissions.');
+  if (item.status !== 'pending') throw new Error('This submission is no longer pending approval.');
+  await updateDoc(doc(db, 'media', item.id), { status: 'approved', approvedAt: serverTimestamp() });
+}
+
+export async function rejectMedia(item: MemorialMedia) {
+  const user = auth.currentUser;
+  if (!user || !canManageMedia(user)) throw new Error('Only the verified portal owner can reject submissions.');
+  if (item.status !== 'pending') throw new Error('This submission is no longer pending approval.');
+  try {
+    await deleteObject(ref(mediaStorage, item.path));
+  } catch (error) {
+    if ((error as { code?: string }).code !== 'storage/object-not-found') throw error;
+  }
+  await deleteDoc(doc(db, 'media', item.id));
 }
 
 export function mediaError(error: unknown) {

@@ -3,28 +3,17 @@ import {
   Play,
   Pause,
   RotateCcw,
-  Volume2,
-  VolumeX,
   Sparkles,
   Heart,
   CheckCircle2,
   Clock,
-  Flame,
   Feather,
-  Sun,
-  Moon,
-  Compass,
 } from 'lucide-react';
-import {
-  playSingingBowlChime,
-  playMeditationEndBell,
-  startAmbientSoundscape,
-  stopAmbientSoundscape,
-} from '../utils/audioSynthesis';
 
 interface GuidedMeditationTimerProps {
   isDarkMode: boolean;
   onSessionComplete?: (durationMinutes: number) => void;
+  onPlayAltarAudio: () => void;
 }
 
 const DURATION_OPTIONS = [
@@ -48,12 +37,12 @@ const MINDFUL_PROMPTS = [
 export const GuidedMeditationTimer: React.FC<GuidedMeditationTimerProps> = ({
   isDarkMode,
   onSessionComplete,
+  onPlayAltarAudio,
 }) => {
   const [selectedMinutes, setSelectedMinutes] = useState<number>(5);
   const [secondsRemaining, setSecondsRemaining] = useState<number>(5 * 60);
   const [isActive, setIsActive] = useState<boolean>(false);
   const [isCompleted, setIsCompleted] = useState<boolean>(false);
-  const [audioMode, setAudioMode] = useState<'bells_only' | 'ambient' | 'silent'>('bells_only');
   const [showBreathingGuide, setShowBreathingGuide] = useState<boolean>(true);
   const [currentPromptIndex, setCurrentPromptIndex] = useState<number>(0);
   const [breathPhase, setBreathPhase] = useState<'Inhale' | 'Hold' | 'Exhale' | 'Rest'>('Inhale');
@@ -120,19 +109,6 @@ export const GuidedMeditationTimer: React.FC<GuidedMeditationTimerProps> = ({
     return () => clearInterval(promptInterval);
   }, [isActive]);
 
-  // Handle Audio Modes
-  useEffect(() => {
-    if (isActive && audioMode === 'ambient') {
-      startAmbientSoundscape(0.2);
-    } else {
-      stopAmbientSoundscape();
-    }
-
-    return () => {
-      stopAmbientSoundscape();
-    };
-  }, [isActive, audioMode]);
-
   const handleSelectDuration = (mins: number) => {
     if (isActive) return;
     setSelectedMinutes(mins);
@@ -146,32 +122,23 @@ export const GuidedMeditationTimer: React.FC<GuidedMeditationTimerProps> = ({
     }
     setIsActive(true);
     setIsCompleted(false);
-
-    if (audioMode !== 'silent') {
-      playSingingBowlChime(216, 5.0, 0.3);
-    }
+    onPlayAltarAudio();
   };
 
   const handlePause = () => {
     setIsActive(false);
-    stopAmbientSoundscape();
   };
 
   const handleReset = () => {
     setIsActive(false);
     setIsCompleted(false);
     setSecondsRemaining(selectedMinutes * 60);
-    stopAmbientSoundscape();
   };
 
   const handleComplete = () => {
     setIsActive(false);
     setIsCompleted(true);
-    stopAmbientSoundscape();
-
-    if (audioMode !== 'silent') {
-      playMeditationEndBell();
-    }
+    onPlayAltarAudio();
 
     if (onSessionComplete) {
       onSessionComplete(selectedMinutes);
@@ -213,42 +180,6 @@ export const GuidedMeditationTimer: React.FC<GuidedMeditationTimerProps> = ({
           </p>
         </div>
 
-        {/* Audio Mode Selection */}
-        <div className="flex items-center gap-1.5 p-1 rounded-xl bg-neutral-950 border border-neutral-800 shrink-0 text-xs">
-          <button
-            onClick={() => setAudioMode('bells_only')}
-            className={`px-2.5 py-1.5 rounded-lg transition-all ${
-              audioMode === 'bells_only'
-                ? 'bg-purple-600 text-white font-medium shadow-sm'
-                : 'text-neutral-400 hover:text-neutral-200'
-            }`}
-            title="Singing bowl at start & 3 resonant temple bells at completion"
-          >
-            🔔 Temple Chimes
-          </button>
-          <button
-            onClick={() => setAudioMode('ambient')}
-            className={`px-2.5 py-1.5 rounded-lg transition-all ${
-              audioMode === 'ambient'
-                ? 'bg-emerald-600 text-white font-medium shadow-sm'
-                : 'text-neutral-400 hover:text-neutral-200'
-            }`}
-            title="Gentle continuous pentatonic Zen ambient background"
-          >
-            🎵 Zen Ambient
-          </button>
-          <button
-            onClick={() => setAudioMode('silent')}
-            className={`px-2.5 py-1.5 rounded-lg transition-all ${
-              audioMode === 'silent'
-                ? 'bg-neutral-800 text-white font-medium shadow-sm'
-                : 'text-neutral-400 hover:text-neutral-200'
-            }`}
-            title="Complete pure silence"
-          >
-            🤫 Pure Silence
-          </button>
-        </div>
       </div>
 
       {/* Main Meditation Workspace */}

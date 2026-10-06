@@ -27,25 +27,43 @@ service cloud.firestore {
         && request.auth.token.email_verified == true;
     }
 
-    // Shared memorial media is only accessible to authenticated members.
+    // Pending submissions remain private to their uploader and the portal owner.
     match /media/{mediaId} {
-      allow read: if isSignedIn();
-      allow create: if isMediaManager()
-        && request.resource.data.keys().hasOnly(['ownerId', 'kind', 'title', 'path', 'contentType', 'size', 'createdAt'])
+      allow read: if isSignedIn()
+        && (resource.data.get('status', 'approved') == 'approved'
+          || isMediaManager()
+          || (resource.data.ownerId == request.auth.uid && resource.data.status == 'pending'));
+      allow create: if isSignedIn()
+        && request.resource.data.keys().hasOnly(['ownerId', 'kind', 'title', 'path', 'contentType', 'size', 'createdAt', 'status', 'approvedAt', 'audioPurpose'])
         && request.resource.data.ownerId == request.auth.uid
-        && request.resource.data.kind in ['picture', 'audio']
+        && request.resource.data.kind in ['picture', 'video', 'audio']
         && isValidString(request.resource.data.title, 1, 150)
         && request.resource.data.path == 'memorial-media/' + request.auth.uid + '/' + request.resource.data.kind + '/' + mediaId
         && request.resource.data.size is int
         && request.resource.data.size > 0
         && request.resource.data.createdAt == request.time
         && ((request.resource.data.kind == 'picture'
-          && request.resource.data.contentType in ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
-          && request.resource.data.size <= 10 * 1024 * 1024)
+          && request.resource.data.contentType.matches('image/.*')
+          && request.resource.data.contentType != 'image/svg+xml'
+          && request.resource.data.status == 'pending'
+          && !request.resource.data.keys().hasAny(['approvedAt', 'audioPurpose']))
+          || (request.resource.data.kind == 'video'
+          && request.resource.data.contentType.matches('video/.*')
+          && request.resource.data.status == 'pending'
+          && !request.resource.data.keys().hasAny(['approvedAt', 'audioPurpose']))
           || (request.resource.data.kind == 'audio'
+          && isMediaManager()
+          && request.resource.data.status == 'approved'
+          && request.resource.data.approvedAt == request.time
+          && request.resource.data.audioPurpose in ['background', 'altar']
           && request.resource.data.contentType in ['audio/mpeg', 'audio/mp4', 'audio/wav', 'audio/x-wav', 'audio/ogg', 'audio/webm', 'audio/flac']
-          && request.resource.data.size <= 50 * 1024 * 1024));
-      allow update, delete: if false;
+          ));
+      allow update: if isMediaManager()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'approvedAt'])
+        && request.resource.data.status == 'approved'
+        && request.resource.data.approvedAt == request.time
+        && (resource.data.status == 'pending' || !resource.data.keys().hasAny(['status']));
+      allow delete: if isMediaManager() && resource.data.status == 'pending';
     }
 
     function validOffering(value) {

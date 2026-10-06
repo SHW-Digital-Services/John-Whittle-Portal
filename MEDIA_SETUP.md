@@ -1,47 +1,65 @@
-# Shared picture gallery and audio uploads
+# Photo, video and audio uploads
 
-The cog and upload popup are restricted to the verified Firebase account `sphw1984@gmail.com`. Use Google sign-in for this account, or verify its email before using password login. The gallery and shared audio list require a real Firebase login. Pictures and audio are shared with other authenticated members. Uploads are stored in Cloud Storage; metadata is saved in the default Firestore database. John’s portrait stays fixed.
+Any signed-in portal member can submit photos and videos from the Gallery or the floating Share a memory button. Submissions stay private to the uploader and the verified portal owner until approved. The owner reviews and previews submissions in Gallery; approval makes them visible to signed-in members, while rejection removes the stored file and its record. A Google Cloud Function emails `sphw1984@gmail.com` when a photo or video is submitted.
+
+There is no application-imposed file-size limit. Firebase Storage, browser memory, network conditions, account quotas, and Google Cloud billing still apply; large media can use substantial storage, bandwidth, and processing time.
+
+The verified owner account `sphw1984@gmail.com` can also upload audio. Each uploaded track is assigned either to the background music player or to altar interactions. The player loads approved background tracks from Firestore/Cloud Storage and no longer generates placeholder temple audio. On the altar, members can choose an uploaded altar track; it plays when they light incense, ring the bell, offer tea or light a candle, and when a meditation starts or completes. The altar and meditation no longer synthesize their own sound effects. Other portal interactions are unchanged.
 
 ## Firebase setup before live use
 
-Enable Cloud Storage in project `john-whittle`, using bucket `john-whittle.firebasestorage.app`. Confirm the project’s storage billing requirements before enabling it.
-
-Review and deploy the included Firestore and Storage rules using a Firebase CLI signed into this project:
+Enable Cloud Storage for project `john-whittle`, using bucket `john-whittle.firebasestorage.app`. Confirm the project is on the Firebase Blaze plan and review expected Storage, Functions, and email usage. Review and deploy the included Firestore and Storage rules:
 
 ```powershell
 firebase deploy --only firestore:rules,storage --project john-whittle
 ```
 
-The Firebase config targets Firestore database `(default)`. The new `media` collection and files under `memorial-media` require authentication. The Storage rules deny access to other file paths; review any existing bucket usage before deploying them.
+The rules allow any signed-in user to create photo/video submissions, but only the verified owner can approve or reject them. Pending files are only readable by their uploader and the owner. Approved files remain authenticated-only. The rules do not set media size ceilings.
 
-The gallery and audio player use authenticated `getBlob` requests rather than public download links. Configure bucket CORS for these requests. Add the exact deployed portal origin to `storage.cors.json` before production, then apply it using a Google Cloud CLI signed into this project:
+### Email notifications
+
+The notification function uses Google Cloud Functions 2nd gen (Node.js 22) and sends mail through Gmail SMTP. Enable the Cloud Functions and Cloud Build APIs if prompted. Create a Google App Password for the sender Gmail account, then configure both values as Firebase Functions secrets. Do not put the app password in source control or a client-side environment variable.
+
+```powershell
+firebase functions:secrets:set SMTP_USER --project john-whittle
+firebase functions:secrets:set SMTP_PASSWORD --project john-whittle
+```
+
+Use `sphw1984@gmail.com` as `SMTP_USER` or another Gmail account authorized to send the notification. `SMTP_PASSWORD` is that account's Google App Password, not its normal sign-in password. The recipient is currently fixed to `sphw1984@gmail.com` in `functions/index.js`.
+
+Deploy the Functions code and access rules after setting the secrets:
+
+```powershell
+firebase deploy --only functions,firestore:rules,storage --project john-whittle
+```
+
+The SMTP sender account must have 2-Step Verification and App Passwords enabled. Function deployment and email delivery require a billable Google Cloud project. The trigger retries failed deliveries, so a transient failure can result in a duplicate notification.
+
+### Storage CORS
+
+Gallery images/videos and audio use authenticated Firebase Storage blob downloads. Add the exact deployed portal origin to `storage.cors.json` before production, then apply it with a Google Cloud CLI signed into this project:
 
 ```powershell
 gcloud storage buckets update gs://john-whittle.firebasestorage.app --cors-file=storage.cors.json
 ```
 
-Local development and preview origins are already listed. CORS does not grant file access; the Storage rules enforce that boundary.
+Local development and preview origins are already listed. CORS does not grant file access; the Storage rules enforce it. The Storage rules use Firestore lookups to check approval status, so keep the Firestore `media` records and Storage objects together in the configured Firebase project.
+
+## Existing audio records
+
+After deploying the new Firestore rules, sign in once as the verified owner account and visit the portal. The app marks pre-existing media records as approved so previously uploaded audio continues to appear in the background player. Legacy audio is treated as background music. Other members can see the old tracks after that migration.
 
 ## Verification
 
-1. Sign in with the verified `sphw1984@gmail.com` account and use the cog to upload a JPEG/PNG/WebP/GIF (up to 10 MB), and an MP3/M4A/WAV/OGG/WebM/FLAC (up to 50 MB).
-2. Open Gallery and check the caption and full-size picture. Reload and confirm it persists. Sign in as a second member and confirm the picture appears, but the cog, Add a picture and Upload tracks controls do not. Direct uploads and media-record creation must be denied for that member.
-3. Expand the music player, choose the uploaded track and press Play. Check pause, volume, mute and returning to temple chimes.
-4. Sign out: Gallery, uploads and shared tracks must disappear and playback must stop. In a separate signed-out browser, verify that direct Firebase SDK reads of `media` and `memorial-media` fail with permission denied.
-5. Check invalid file types and oversized files are rejected, and an interrupted upload reports an error without showing success.
+1. Sign in as a non-owner member, open Gallery, and submit an image and a video. Confirm uploads have progress feedback and the resulting media remains hidden from other members.
+2. Sign in as `sphw1984@gmail.com`; verify each pending item can be previewed, approved, or rejected. Confirm approved items appear in Gallery and rejected files disappear.
+3. Confirm a photo/video submission sends a notification email to `sphw1984@gmail.com`. Audio uploads should not send submission notifications.
+4. As the owner, upload an audio file for background music and another for altar interactions. Confirm background audio plays only from the player and altar audio can be selected and plays for altar actions and meditation.
+5. Confirm a regular signed-in member cannot approve/reject, upload audio, read another user's pending media, or read media while signed out.
+6. Test large media within Firebase Storage's supported object size and available browser memory. Verify a failed upload displays an error and does not create a successful submission record.
 
-Rule deployment, bucket CORS and live authenticated uploads have not been verified locally.
+Rule deployment, CORS, Gmail SMTP, Cloud Function deployment, live email, and live authenticated uploads must be verified in the Firebase project before public use.
 
 ## Local checks
 
-`npm run check:media` verifies file type and size boundaries. `npm run lint` checks TypeScript, and `npm run build` creates the production bundle.
-
-`scripts/qa-media.cjs` uses Playwright against the running dev server. Install/provide Playwright separately or set `PLAYWRIGHT_PACKAGE_PATH` to an existing Playwright package directory. It verifies signed-out restrictions against the real app, then uses the isolated fixture in `scripts/fixtures/media.html` with mocked Firebase services to check gallery, uploads and audio UI on desktop and mobile. The fixture is not part of the production build. It does not validate Firebase permissions, CORS or live persistence. Screenshots are saved in `scripts/artifacts`.
-
-Uploaded audio is the site background playlist for logged-in members. The latest upload is selected automatically when the member signs in. Playback starts with Play, continues across portal pages, advances through the tracks and repeats. Uploaded media retains its login requirement.
-
-## Tightened Firestore access
-
-Condolences remain publicly readable. Messages, milestones, profiles, altar totals and uploaded media require login to read. All content creation requires login and a matching author/sender ID. Condolence candles and altar counters may only increase by one; altar writes cannot replace totals or add arbitrary fields. Profiles are owner-only. Messages/condolences may only be deleted by their author. Milestone deletion is limited to the author or the verified portal owner. Media upload permissions remain owner-only.
-
-Deploy from the project folder using `firebase deploy --only firestore:rules,storage --project john-whittle`. This updates access rules, not website code or existing records. Deploy the accompanying client update to Vercel as well: it uses atomic candle increments and transactions for shared altar counters. Rule enforcement must be checked in Firebase Rules Playground or an emulator before public launch.
+`npm run lint` checks TypeScript, and `npm run build` creates the production bundle. The Functions source uses Node.js 22; run `npm install --prefix functions` before deploying if Firebase CLI reports missing Functions dependencies.

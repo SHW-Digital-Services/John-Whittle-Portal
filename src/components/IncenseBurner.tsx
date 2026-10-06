@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { playSingingBowlChime } from '../utils/audioSynthesis';
 
 interface IncenseBurnerProps {
   count: number;
   onLight: () => Promise<void>;
+  onPlaySound: () => void;
 }
 
-export function IncenseBurner({ count, onLight }: IncenseBurnerProps) {
+export function IncenseBurner({ count, onLight, onPlaySound }: IncenseBurnerProps) {
   const [lit, setLit] = useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState('');
@@ -15,7 +15,7 @@ export function IncenseBurner({ count, onLight }: IncenseBurnerProps) {
     if (pending) return;
     const previouslyLit = lit;
     setLit(true); setPending(true); setError('');
-    playSingingBowlChime(216, 1.8, 0.045);
+    onPlaySound();
     try { await onLight(); }
     catch { setLit(previouslyLit); setError('Could not record your incense offering. Please try again.'); }
     finally { setPending(false); }

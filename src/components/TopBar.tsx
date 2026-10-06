@@ -52,7 +52,7 @@ export const TopBar: React.FC<TopBarProps> = ({
         >
           <JohnPortrait size="avatar" showFrame={true} showSeal={false} />
           <div className="flex flex-col">
-            <span className="font-serif text-base sm:text-lg font-semibold tracking-wide text-neutral-100 dark:text-neutral-100 group-hover:text-purple-400 transition-colors">
+            <span className="font-serif text-base sm:text-lg font-semibold tracking-wide text-red-700 dark:text-red-400 group-hover:text-red-600 dark:group-hover:text-red-300 transition-colors">
               John Alan Whittle
             </span>
             <span className="font-calligraphy text-xs text-emerald-500 dark:text-emerald-400 -mt-0.5 tracking-wider">
