@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X, User, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, signInWithPopup, User as FirebaseUser } from 'firebase/auth';
 import { auth, googleProvider } from '../lib/firebase';
+import { RecaptchaVerificationError, verifyRecaptchaAction } from '../lib/recaptcha';
 import { UserProfile } from '../types/memorial';
 import { RelationshipSelect } from './RelationshipSelect';
 
@@ -39,6 +40,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setIsLoading(true);
     setErrorMsg(null);
     try {
+      await verifyRecaptchaAction('LOGIN');
       const result = await signInWithPopup(auth, googleProvider);
       const fbUser: FirebaseUser = result.user;
       const profile: UserProfile = {
@@ -52,6 +54,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       onUserChange(profile);
       onClose();
     } catch (err: unknown) {
+      if (err instanceof RecaptchaVerificationError) {
+        setErrorMsg(err.message);
+        return;
+      }
       console.warn('Google sign-in error', err);
       const errorObj = err as { code?: string; message?: string };
       const messages: Record<string, string> = {
@@ -75,6 +81,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setIsLoading(true);
     setErrorMsg(null);
     try {
+      await verifyRecaptchaAction(isSignUp ? 'SIGNUP' : 'LOGIN');
       const result = isSignUp
         ? await createUserWithEmailAndPassword(auth, email.trim(), password)
         : await signInWithEmailAndPassword(auth, email.trim(), password);
@@ -88,6 +95,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       });
       onClose();
     } catch (err: unknown) {
+      if (err instanceof RecaptchaVerificationError) {
+        setErrorMsg(err.message);
+        return;
+      }
       const code = (err as { code?: string }).code;
       const messages: Record<string, string> = {
         'auth/email-already-in-use': 'This email already has an account. Please log in.',

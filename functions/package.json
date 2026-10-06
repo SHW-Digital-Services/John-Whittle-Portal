@@ -6,6 +6,7 @@
   },
   "main": "index.js",
   "dependencies": {
+    "@google-cloud/recaptcha-enterprise": "^7.2.1",
     "firebase-functions": "^7.4.0",
     "nodemailer": "^10.0.15"
   }

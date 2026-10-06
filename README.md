@@ -1,20 +1,24 @@
 <div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
+  <img src="public/images/john-memorial-banner.jpg" width="100%" alt="John Alan Whittle beneath a starry night sky, with his name in English and Chinese calligraphy" />
 </div>
 
-# Run and deploy your AI Studio app
+---
 
-This contains everything you need to run your app locally.
+This portal is dedicated to the life and memory of John Alan Whittle.
 
-View your app in AI Studio: https://ai.studio/apps/5fa1ef06-4468-4362-823c-8e3d99debb65
+May the love he shared, the memories he created, and the wisdom he passed on
+continue to bring comfort and inspiration to all who knew him. His spirit lives
+on in the stories cherished by family and friends, in every act of kindness, and
+in the bonds that remain.
+
+With love and remembrance, this sanctuary is a place to reflect, share memories,
+and celebrate John's enduring legacy.
 
 ## Run Locally
 
-**Prerequisites:**  Node.js
-
+**Prerequisite:** Node.js
 
 1. Install dependencies:
    `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
+2. Start the development server:
    `npm run dev`
