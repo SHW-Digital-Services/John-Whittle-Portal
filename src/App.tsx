@@ -27,6 +27,7 @@ import { OfferingType, UserProfile } from './types/memorial';
 import { auth, testConnection } from './lib/firebase';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { installSingleAudioPlayback } from './utils/audioPlayback';
+import { Analytics } from '@vercel/analytics/react';
 
 const serviceWindowStart = new Date('2026-10-07T14:00:00+01:00').getTime();
 const serviceWindowEnd = new Date('2026-10-07T14:30:00+01:00').getTime();
@@ -202,6 +203,7 @@ export default function App() {
 
   return (
     <>
+    <Analytics />
     <div className={`min-h-screen flex flex-col font-sans relative selection:bg-purple-500/30 ${isDarkMode ? 'dark bg-neutral-950 text-neutral-100' : 'bg-stone-50 text-neutral-900'}`}>
       {/* Background Celestial Star & Lantern Canvas */}
       <CelestialSkyCanvas
