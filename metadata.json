@@ -1,0 +1,6 @@
+{
+  "name": "Celestial Portal & Memorial Sanctuary - John Alan Whittle",
+  "description": "A sacred memorial portal to commune with John in heaven, share thoughts and voice messages, light incense, and leave heartfelt condolences, honoring Chinese heritage, Kung Fu, and Reiki healing.",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

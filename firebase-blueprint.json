@@ -1,0 +1,102 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile in the memorial portal",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "displayName": { "type": "string", "maxLength": 100 },
+        "email": { "type": "string", "maxLength": 150 },
+        "photoURL": { "type": "string", "maxLength": 500 },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["uid", "displayName"]
+    },
+    "CelestialMessage": {
+      "title": "CelestialMessage",
+      "description": "Message or voice recording communicated to John Alan Whittle in heaven",
+      "type": "object",
+      "properties": {
+        "senderId": { "type": "string", "maxLength": 128 },
+        "senderName": { "type": "string", "maxLength": 100 },
+        "senderRelationship": { "type": "string", "maxLength": 100 },
+        "type": { "type": "string", "enum": ["text", "voice"] },
+        "content": { "type": "string", "maxLength": 5000 },
+        "audioBlobUrl": { "type": "string", "maxLength": 500000 },
+        "audioDurationSeconds": { "type": "number" },
+        "offering": { "type": "string", "maxLength": 50 },
+        "category": { "type": "string", "maxLength": 50 },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["senderName", "type", "offering", "createdAt"]
+    },
+    "Condolence": {
+      "title": "Condolence",
+      "description": "Visitor condolence and tribute left in memory of John Alan Whittle",
+      "type": "object",
+      "properties": {
+        "authorId": { "type": "string", "maxLength": 128 },
+        "authorName": { "type": "string", "maxLength": 100 },
+        "relationship": { "type": "string", "maxLength": 100 },
+        "message": { "type": "string", "maxLength": 5000 },
+        "offering": { "type": "string", "maxLength": 50 },
+        "candlesLit": { "type": "number" },
+        "isFamily": { "type": "boolean" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["authorName", "message", "offering", "createdAt"]
+    },
+    "LegacyMilestone": {
+      "title": "LegacyMilestone",
+      "description": "Chronological milestone or treasured memory in the life journey of John Alan Whittle",
+      "type": "object",
+      "properties": {
+        "year": { "type": "string", "maxLength": 20 },
+        "date": { "type": "string", "maxLength": 50 },
+        "title": { "type": "string", "maxLength": 150 },
+        "description": { "type": "string", "maxLength": 3000 },
+        "category": { "type": "string", "maxLength": 50 },
+        "authorName": { "type": "string", "maxLength": 100 },
+        "authorId": { "type": "string", "maxLength": 128 },
+        "hanzi": { "type": "string", "maxLength": 20 },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["year", "title", "description", "createdAt"]
+    },
+    "ShrineState": {
+      "title": "ShrineState",
+      "description": "Global offerings tally at the ancestral memorial altar",
+      "type": "object",
+      "properties": {
+        "incenseLitCount": { "type": "number" },
+        "candlesLitCount": { "type": "number" },
+        "bellRungCount": { "type": "number" },
+        "teaOfferedCount": { "type": "number" },
+        "updatedAt": { "type": "string" }
+      }
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "User profile documents"
+    },
+    "/messages/{messageId}": {
+      "schema": { "$ref": "#/entities/CelestialMessage" },
+      "description": "Messages communicated to John"
+    },
+    "/condolences/{condolenceId}": {
+      "schema": { "$ref": "#/entities/Condolence" },
+      "description": "Memorial condolences and tributes"
+    },
+    "/milestones/{milestoneId}": {
+      "schema": { "$ref": "#/entities/LegacyMilestone" },
+      "description": "Chronological milestones and life memories of John Alan Whittle"
+    },
+    "/shrine/global": {
+      "schema": { "$ref": "#/entities/ShrineState" },
+      "description": "Global memorial altar counters"
+    }
+  }
+}

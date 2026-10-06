@@ -1,0 +1,23 @@
+import assert from 'node:assert/strict';
+import { AUDIO_LIMIT, IMAGE_LIMIT, validateMedia } from '../src/lib/mediaValidation';
+const image = (size: number, type = 'image/jpeg') => new File([new Uint8Array(size)], 'picture.jpg', { type });
+const audio = (size: number, type = 'audio/mpeg') => new File([new Uint8Array(size)], 'track.mp3', { type });
+assert.doesNotThrow(() => validateMedia(image(IMAGE_LIMIT), 'picture'));
+assert.throws(() => validateMedia(image(IMAGE_LIMIT + 1), 'picture'), /10 MB/);
+assert.throws(() => validateMedia(image(0), 'picture'), /10 MB/);
+assert.throws(() => validateMedia(image(10, 'image/svg+xml'), 'picture'), /supported/);
+assert.doesNotThrow(() => validateMedia(audio(AUDIO_LIMIT), 'audio'));
+assert.throws(() => validateMedia(audio(AUDIO_LIMIT + 1), 'audio'), /50 MB/);
+assert.throws(() => validateMedia(audio(0), 'audio'), /50 MB/);
+assert.throws(() => validateMedia(audio(10, 'text/html'), 'audio'), /supported/);
+assert.throws(() => validateMedia(audio(10), 'picture'), /supported/);
+assert.throws(() => validateMedia(image(10), 'audio'), /supported/);
+console.log('Passed 10 media file validation checks.');
+
+import { canManageMedia } from '../src/lib/mediaAccess';
+assert.equal(canManageMedia(null), false);
+assert.equal(canManageMedia({ email: 'someone@example.com', emailVerified: true }), false);
+assert.equal(canManageMedia({ email: 'scotthw1984@gmail.com', emailVerified: false }), false);
+assert.equal(canManageMedia({ email: 'scotthw1984@gmail.com' }), false);
+assert.equal(canManageMedia({ email: 'scotthw1984@gmail.com', emailVerified: true }), true);
+console.log('Passed 5 media upload authorization checks.');

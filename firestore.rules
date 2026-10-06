@@ -1,0 +1,96 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default safety deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidString(val, minLen, maxLen) {
+      return val is string && val.size() >= minLen && val.size() <= maxLen;
+    }
+
+    function isMediaManager() {
+      return isSignedIn()
+        && request.auth.token.email == 'scotthw1984@gmail.com'
+        && request.auth.token.email_verified == true;
+    }
+
+    // Shared memorial media is only accessible to authenticated members.
+    match /media/{mediaId} {
+      allow read: if isSignedIn();
+      allow create: if isMediaManager()
+        && request.resource.data.keys().hasOnly(['ownerId', 'kind', 'title', 'path', 'contentType', 'size', 'createdAt'])
+        && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.kind in ['picture', 'audio']
+        && isValidString(request.resource.data.title, 1, 150)
+        && request.resource.data.path == 'memorial-media/' + request.auth.uid + '/' + request.resource.data.kind + '/' + mediaId
+        && request.resource.data.size is int
+        && request.resource.data.size > 0
+        && request.resource.data.createdAt == request.time
+        && ((request.resource.data.kind == 'picture'
+          && request.resource.data.contentType in ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+          && request.resource.data.size <= 10 * 1024 * 1024)
+          || (request.resource.data.kind == 'audio'
+          && request.resource.data.contentType in ['audio/mpeg', 'audio/mp4', 'audio/wav', 'audio/x-wav', 'audio/ogg', 'audio/webm', 'audio/flac']
+          && request.resource.data.size <= 50 * 1024 * 1024));
+      allow update, delete: if false;
+    }
+
+    // User profiles
+    match /users/{userId} {
+      allow read: if isSignedIn();
+      allow write: if isOwner(userId);
+    }
+
+    // Messages communicated to John Alan Whittle in heaven
+    match /messages/{messageId} {
+      allow read: if true;
+      allow create: if request.resource.data.keys().hasAll(['senderName', 'type', 'offering', 'createdAt'])
+                    && isValidString(request.resource.data.senderName, 1, 100)
+                    && request.resource.data.type in ['text', 'voice']
+                    && isValidString(request.resource.data.offering, 1, 50);
+      allow delete: if isSignedIn() && (request.resource.data.senderId == request.auth.uid || resource.data.senderId == request.auth.uid);
+      allow update: if false;
+    }
+
+    // Condolences left by visitors and family
+    match /condolences/{condolenceId} {
+      allow read: if true;
+      allow create: if request.resource.data.keys().hasAll(['authorName', 'message', 'offering', 'createdAt'])
+                    && isValidString(request.resource.data.authorName, 1, 100)
+                    && isValidString(request.resource.data.message, 1, 5000);
+      // Allow incrementing candle tally
+      allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(['candlesLit']);
+      allow delete: if isSignedIn() && resource.data.authorId == request.auth.uid;
+    }
+
+    // Legacy Milestones & Memories of John Alan Whittle
+    match /milestones/{milestoneId} {
+      allow read: if true;
+      allow create: if request.resource.data.keys().hasAll(['year', 'title', 'description', 'createdAt'])
+                    && isValidString(request.resource.data.year, 1, 20)
+                    && isValidString(request.resource.data.title, 1, 150)
+                    && isValidString(request.resource.data.description, 1, 3000);
+      allow update: if isSignedIn();
+      allow delete: if isSignedIn();
+    }
+
+    // Memorial Shrine Counters
+    match /shrine/{shrineId} {
+      allow read: if true;
+      allow write: if true;
+    }
+  }
+}

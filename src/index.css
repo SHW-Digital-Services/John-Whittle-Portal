@@ -1,0 +1,67 @@
+@import "tailwindcss";
+
+@theme {
+  --font-serif: "Cormorant Garamond", "Cinzel", Georgia, serif;
+  --font-sans: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-calligraphy: "Ma Shan Zheng", cursive, "Noto Serif SC", serif;
+  --font-chinese: "Noto Serif SC", "Ma Shan Zheng", serif;
+}
+
+/* Custom smooth transitions & animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Subtle scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(168, 85, 247, 0.25);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(168, 85, 247, 0.45);
+}
+
+/* Incense burner: the smoke is decorative and never intercepts clicks. */
+.incense-scene { display: block; position: relative; height: 240px; width: 220px; max-width: 100%; margin: 0 auto 8px; pointer-events: none; }
+.incense-smoke-area { position: absolute; left: 0; top: 0; width: 100%; height: 130px; overflow: hidden; }
+.incense-smoke { position: absolute; bottom: -12px; width: 22px; height: 58px; border-radius: 50%; background: linear-gradient(0deg, transparent, rgba(230, 222, 210, .35), transparent); filter: blur(7px); opacity: 0; animation: incense-smoke-rise 5.5s ease-out infinite; }
+.incense-stick { position: absolute; left: calc(50% - 2px); bottom: 55px; width: 4px; height: 75px; border-radius: 3px; background: linear-gradient(90deg, #725039, #bc8961, #765237); }
+.incense-ember { position: absolute; left: -1px; top: -2px; width: 6px; height: 6px; border-radius: 50%; background: #5e4b40; }
+.incense-burner[data-lit="true"] .incense-ember { background: #ffb35c; box-shadow: 0 0 8px 3px #f9731655, 0 0 24px 7px #f9731622; animation: incense-ember-glow 2.4s ease-in-out infinite; }
+.incense-bowl-rim { position: absolute; z-index: 2; bottom: 52px; left: 15%; width: 70%; height: 18px; border-radius: 50%; border: 3px solid #c58b42; background: radial-gradient(ellipse, #93806b, #584434 65%, #34281e); }
+.incense-bowl { position: absolute; bottom: 10px; left: 15%; width: 70%; height: 52px; border-radius: 8px 8px 65px 65px; border: 1px solid #b88338; background: linear-gradient(100deg, #342413, #98672c 45%, #b3823e 55%, #49311a); box-shadow: inset 0 -8px 14px #160d0980, 0 10px 20px #0005; }
+.incense-bowl-mark { display: block; margin-top: 14px; font-size: 18px; color: #ebca89; }
+.incense-bowl-foot { position: absolute; bottom: 2px; left: 35%; width: 30%; height: 9px; border-radius: 3px 3px 8px 8px; background: linear-gradient(90deg, #4a3018, #b88338, #4a3018); }
+@keyframes incense-smoke-rise {
+  0% { transform: translate(-50%, 12px) scale(.45); opacity: 0; }
+  15% { opacity: .55; }
+  45% { transform: translate(calc(-50% + 14px), -48px) scale(.95) rotate(12deg); opacity: .4; }
+  75% { transform: translate(calc(-50% - 14px), -92px) scale(1.35) rotate(-12deg); opacity: .2; }
+  100% { transform: translate(calc(-50% + 18px), -140px) scale(1.7); opacity: 0; }
+}
+@keyframes incense-ember-glow { 50% { opacity: .65; box-shadow: 0 0 5px 2px #f9731640; } }
+@media (prefers-reduced-motion: reduce) {
+  .incense-smoke { animation: none; opacity: .25; transform: translate(-50%, -45px); }
+  .incense-burner[data-lit="true"] .incense-ember { animation: none; }
+}
