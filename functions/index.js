@@ -42,6 +42,7 @@ exports.assessRecaptchaToken = onCall(async request => {
     if (!tokenProperties?.valid || tokenProperties.action !== action ||
         typeof score !== 'number' || score < recaptchaScoreThreshold) {
       console.warn('reCAPTCHA rejected an authentication attempt.', {
+        assessment: assessment.name,
         action,
         valid: tokenProperties?.valid,
         tokenAction: tokenProperties?.action,
@@ -51,6 +52,12 @@ exports.assessRecaptchaToken = onCall(async request => {
       throw new HttpsError('permission-denied', 'Security verification failed.');
     }
 
+    console.info('reCAPTCHA accepted an authentication attempt.', {
+      assessment: assessment.name,
+      action,
+      score,
+      reasons: assessment.riskAnalysis?.reasons || [],
+    });
     return { verified: true };
   } catch (error) {
     if (error instanceof HttpsError) throw error;
