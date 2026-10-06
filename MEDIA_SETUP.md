@@ -6,7 +6,17 @@ Approved background audio uploaded by the verified owner is also available to si
 
 There is no application-imposed file-size limit. Firebase Storage, browser memory, network conditions, account quotas, and Google Cloud billing still apply; large media can use substantial storage, bandwidth, and processing time.
 
-The verified owner account `sphw1984@gmail.com` can also upload audio. Each uploaded track is assigned either to the background music player or to altar interactions. The player loads approved background tracks from Firestore/Cloud Storage and no longer generates placeholder temple audio. On the altar, members can choose an uploaded altar track; it plays when they light incense, ring the bell, offer tea or light a candle, and when a meditation starts or completes. The altar and meditation no longer synthesize their own sound effects. Other portal interactions are unchanged.
+The verified owner account `sphw1984@gmail.com` has a **Media admin** panel in Gallery. It can upload photos, videos, and audio; review pending photos/videos and approve them for publication or reject them; and delete published photos/videos or any background, altar, or meditation audio track. Owner uploads of photos and videos also remain pending until approved. When uploading audio, use the purpose dropdown to choose **Background music**, **Altar sound**, or **Meditation sound**. The player loads approved background tracks from Firestore/Cloud Storage and no longer generates placeholder temple audio. On the altar, members can choose an uploaded altar track and a separate meditation track. The altar track plays for incense, bell, tea, and candle actions; the meditation track plays when a meditation starts or completes. The altar and meditation no longer synthesize their own sound effects. Other portal interactions are unchanged.
+
+### Suggested audio to acquire
+
+Use recordings you made or tracks licensed for use on your site (including properly licensed royalty-free audio).
+
+- **Background music:** gentle, unobtrusive instrumental ambience, ideally loop-friendly and without sudden loud changes.
+- **Altar sound:** a short, calm bell, singing-bowl, or soft-chime recording for altar actions.
+- **Meditation sound:** a longer, steady, quiet ambient or instrumental meditation track, preferably without speech or abrupt transitions. This plays at the beginning and end of a meditation.
+
+Supported formats include MP3, M4A (audio/mp4), WAV, OGG, WebM, and FLAC. There is no app-imposed file-size limit; compressed MP3/M4A files are usually more practical for long recordings.
 
 ## Firebase setup before live use
 

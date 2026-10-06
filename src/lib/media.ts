@@ -17,7 +17,7 @@ export interface MemorialMedia {
   size: number;
   createdAt?: { seconds: number; nanoseconds: number };
   status?: 'pending' | 'approved';
-  audioPurpose?: 'background' | 'altar';
+  audioPurpose?: 'background' | 'altar' | 'meditation';
   visibility?: 'public' | 'private';
 }
 
@@ -26,7 +26,7 @@ export async function uploadMedia(
   kind: MediaKind,
   title: string,
   onProgress: (value: number) => void,
-  audioPurpose: 'background' | 'altar' = 'background',
+  audioPurpose: 'background' | 'altar' | 'meditation' = 'background',
 ) {
   const user = auth.currentUser;
   if (!user) throw new Error('Please sign in before uploading media.');
@@ -99,7 +99,7 @@ export function subscribeMedia(
         void updateDoc(doc(db, 'media', item.id), {
           status: 'approved',
           approvedAt: serverTimestamp(),
-          visibility: item.kind === 'audio' && item.audioPurpose !== 'altar' ? 'public' : 'private',
+          visibility: item.kind === 'audio' && (item.audioPurpose || 'background') === 'background' ? 'public' : 'private',
         })
           .catch(onError)
           .finally(() => migrating.delete(item.id));
@@ -130,6 +130,12 @@ export async function rejectMedia(item: MemorialMedia) {
   const user = auth.currentUser;
   if (!user || !canManageMedia(user)) throw new Error('Only the verified portal owner can reject submissions.');
   if (item.status !== 'pending') throw new Error('This submission is no longer pending approval.');
+  await deleteMedia(item);
+}
+
+export async function deleteMedia(item: MemorialMedia) {
+  const user = auth.currentUser;
+  if (!user || !canManageMedia(user)) throw new Error('Only the verified portal owner can delete media.');
   try {
     await deleteObject(ref(mediaStorage, item.path));
   } catch (error) {

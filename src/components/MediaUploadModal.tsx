@@ -10,7 +10,7 @@ interface Props { onClose: () => void; onGallery: () => void; isDarkMode: boolea
 export function MediaUploadModal({ onClose, onGallery, isDarkMode }: Props) {
   const canUploadAudio = canManageMedia(auth.currentUser);
   const [kind, setKind] = useState<MediaKind>('picture');
-  const [audioPurpose, setAudioPurpose] = useState<'background' | 'altar'>('background');
+  const [audioPurpose, setAudioPurpose] = useState<'background' | 'altar' | 'meditation'>('background');
   const [file, setFile] = useState<File | null>(null);
   const [title, setTitle] = useState('');
   const [busy, setBusy] = useState(false);
@@ -42,7 +42,9 @@ export function MediaUploadModal({ onClose, onGallery, isDarkMode }: Props) {
     busyRef.current = true; setBusy(true); setError(''); setMessage(''); setProgress(0);
     try {
       await uploadMedia(file, kind, title, setProgress, audioPurpose);
-      setMessage(kind === 'audio' ? `Audio track added for ${audioPurpose === 'altar' ? 'altar interactions' : 'background music'}.` : 'Your memory was submitted for approval.');
+      setMessage(kind === 'audio'
+        ? `Audio track added for ${audioPurpose === 'background' ? 'background music' : audioPurpose === 'altar' ? 'altar interactions' : 'meditation'}.`
+        : 'Your memory was submitted for approval.');
       setFile(null); setTitle('');
       if (inputRef.current) inputRef.current.value = '';
     } catch (err) { setError(mediaError(err)); }
@@ -65,9 +67,10 @@ export function MediaUploadModal({ onClose, onGallery, isDarkMode }: Props) {
         <div><label htmlFor="media-title" className="block text-sm mb-1">{kind === 'audio' ? 'Track title' : 'Caption'} (optional)</label>
           <input id="media-title" value={title} onChange={e => setTitle(e.target.value)} maxLength={150} disabled={busy} className="w-full rounded-lg border border-neutral-500 bg-transparent p-2" /></div>
         {kind === 'audio' && <div><label htmlFor="audio-purpose" className="block text-sm mb-1">Use this audio for</label>
-          <select id="audio-purpose" value={audioPurpose} disabled={busy} onChange={e => setAudioPurpose(e.target.value as 'background' | 'altar')} className="w-full rounded-lg border border-neutral-500 bg-transparent p-2">
+          <select id="audio-purpose" value={audioPurpose} disabled={busy} onChange={e => setAudioPurpose(e.target.value as 'background' | 'altar' | 'meditation')} className="w-full rounded-lg border border-neutral-500 bg-transparent p-2">
             <option value="background" className="text-neutral-900">Background music</option>
-            <option value="altar" className="text-neutral-900">Altar interactions</option>
+            <option value="altar" className="text-neutral-900">Altar sound</option>
+            <option value="meditation" className="text-neutral-900">Meditation sound</option>
           </select></div>}
         <div><label htmlFor="media-file" className="block text-sm mb-1">{kind === 'audio' ? 'Choose an audio track' : `Choose a ${kind === 'picture' ? 'photo' : 'video'}`}</label>
           <input ref={inputRef} id="media-file" type="file" required disabled={busy} accept={kind === 'audio' ? AUDIO_TYPES.join(',') : kind === 'picture' ? 'image/*' : 'video/*'} onChange={e => {

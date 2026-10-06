@@ -59,9 +59,9 @@ service cloud.firestore {
           && isMediaManager()
           && request.resource.data.status == 'approved'
           && request.resource.data.approvedAt == request.time
-          && request.resource.data.audioPurpose in ['background', 'altar']
+          && request.resource.data.audioPurpose in ['background', 'altar', 'meditation']
           && ((request.resource.data.audioPurpose == 'background' && request.resource.data.visibility == 'public')
-            || (request.resource.data.audioPurpose == 'altar' && request.resource.data.visibility == 'private'))
+            || (request.resource.data.audioPurpose in ['altar', 'meditation'] && request.resource.data.visibility == 'private'))
           && request.resource.data.contentType in ['audio/mpeg', 'audio/mp4', 'audio/wav', 'audio/x-wav', 'audio/ogg', 'audio/webm', 'audio/flac']
           ));
       allow update: if isMediaManager()
@@ -72,7 +72,7 @@ service cloud.firestore {
         && (request.resource.data.get('visibility', resource.data.get('visibility', 'private')) == 'private'
           || (resource.data.kind == 'audio'
             && resource.data.get('audioPurpose', 'background') == 'background'));
-      allow delete: if isMediaManager() && resource.data.status == 'pending';
+      allow delete: if isMediaManager();
     }
 
     function validOffering(value) {

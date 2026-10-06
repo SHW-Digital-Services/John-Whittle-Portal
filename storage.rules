@@ -33,7 +33,7 @@ service firebase.storage {
       allow delete: if isMediaManager()
         && request.auth.uid == userId
         && (!firestore.exists(/databases/(default)/documents/media/$(fileId))
-          || firestore.get(/databases/(default)/documents/media/$(fileId)).data.status == 'pending');
+          || firestore.get(/databases/(default)/documents/media/$(fileId)).data.ownerId == userId);
       allow update: if false;
     }
     match /{allPaths=**} { allow read, write: if false; }

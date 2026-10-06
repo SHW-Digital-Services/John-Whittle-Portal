@@ -20,7 +20,7 @@ import { ImagePlus } from 'lucide-react';
 import { MediaUploadModal } from './components/MediaUploadModal';
 import { PictureGallery } from './components/PictureGallery';
 import { canManageMedia } from './lib/mediaAccess';
-import { approveMedia, mediaError, MemorialMedia, rejectMedia, subscribeMedia } from './lib/media';
+import { approveMedia, deleteMedia, mediaError, MemorialMedia, rejectMedia, subscribeMedia } from './lib/media';
 import { AuthModal } from './components/AuthModal';
 import { OfferingType, ThemeMode, UserProfile } from './types/memorial';
 import { auth, testConnection } from './lib/firebase';
@@ -56,6 +56,10 @@ export default function App() {
   );
   const altarAudioTracks = useMemo(
     () => mediaItems.filter(item => item.kind === 'audio' && item.audioPurpose === 'altar'),
+    [mediaItems],
+  );
+  const meditationAudioTracks = useMemo(
+    () => mediaItems.filter(item => item.kind === 'audio' && item.audioPurpose === 'meditation'),
     [mediaItems],
   );
   const openMedia = () => { if (auth.currentUser) setIsMediaOpen(true); else setIsAuthOpen(true); };
@@ -250,6 +254,7 @@ export default function App() {
                 onUpload={openMedia}
                 onApprove={approveMedia}
                 onReject={rejectMedia}
+                onDelete={deleteMedia}
               />
             )}
 
@@ -262,6 +267,7 @@ export default function App() {
                 isDarkMode={isDarkMode}
                 onOfferingAscended={() => handleAscendOffering('incense')}
                 audioTracks={altarAudioTracks}
+                meditationTracks={meditationAudioTracks}
               />
             )}
           </>
