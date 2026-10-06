@@ -330,7 +330,7 @@ export const CelestialPortal: React.FC<CelestialPortalProps> = ({
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <label className="block text-xs font-medium uppercase tracking-wider text-neutral-400">
-                    Your Words to John Alan Whittle
+                    Your Words to <span className="text-red-700 dark:text-red-400">John Alan Whittle</span>
                   </label>
                   <span className="text-[11px] text-neutral-500">
                     {textContent.length} characters

@@ -51,6 +51,7 @@ export const EulogyPage: React.FC<EulogyPageProps> = ({ currentUser, isDarkMode 
         <CalligraphyName
           size="hero"
           name="John Alan Whittle"
+          nameClassName="text-red-700 dark:text-red-400"
           honorific="A Eulogy in Loving Memory"
           subtitle="Words spoken by his son, Scott, at the funeral"
         />

@@ -23,7 +23,7 @@ export const CalligraphyName: React.FC<CalligraphyNameProps> = ({
   className = '',
   honorific,
   subtitle,
-  nameClassName = 'text-neutral-900 dark:text-neutral-100',
+  nameClassName = 'text-red-700 dark:text-red-400',
   name = 'John Alan Whittle',
 }) => {
   const alignClass = {
@@ -107,7 +107,12 @@ export const CalligraphyName: React.FC<CalligraphyNameProps> = ({
 
       {subtitle && (
         <span className="text-xs text-neutral-500 dark:text-neutral-400 mt-1 font-sans">
-          {subtitle}
+          {subtitle.split('John Alan Whittle').map((part, index, parts) => (
+            <React.Fragment key={index}>
+              {part}
+              {index < parts.length - 1 && <span className="text-red-700 dark:text-red-400">John Alan Whittle</span>}
+            </React.Fragment>
+          ))}
         </span>
       )}
     </div>

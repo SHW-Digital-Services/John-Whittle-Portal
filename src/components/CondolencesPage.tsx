@@ -239,7 +239,7 @@ export const CondolencesPage: React.FC<CondolencesPageProps> = ({
 
         <p className="text-xs sm:text-sm text-neutral-400 max-w-xl mx-auto leading-relaxed font-sans">
           Welcome to the memorial visitors space for{' '}
-          <strong className="text-neutral-200">John Alan Whittle</strong>. Family, martial arts
+          <strong className="text-red-700 dark:text-red-400">John Alan Whittle</strong>. Family, martial arts
           brothers and sisters, reiki practitioners, and dear friends are invited to read all
           tributes, celebrate his life, and light eternal candles.
         </p>
@@ -585,7 +585,7 @@ export const CondolencesPage: React.FC<CondolencesPageProps> = ({
                   </div>
 
                   <h2 className="font-serif text-3xl sm:text-4xl font-semibold tracking-wide text-neutral-100">
-                    John Alan Whittle
+                    <span className="text-red-700 dark:text-red-400">John Alan Whittle</span>
                   </h2>
 
                   <div className="font-calligraphy text-2xl text-emerald-400 tracking-widest py-1">
@@ -706,7 +706,7 @@ export const CondolencesPage: React.FC<CondolencesPageProps> = ({
                   </div>
 
                   <p className="text-[11px] text-neutral-500 font-sans">
-                    In Everlasting Memory of John Alan Whittle
+                    In Everlasting Memory of <span className="text-red-700 dark:text-red-400">John Alan Whittle</span>
                   </p>
 
                   <div className="pt-4">
@@ -832,7 +832,7 @@ export const CondolencesPage: React.FC<CondolencesPageProps> = ({
                       <div className="mt-4 pt-3 border-t border-neutral-800/60 flex items-center justify-between text-xs">
                         <span className="text-neutral-500 text-[11px]">
                           Honoring{' '}
-                          <span className="text-neutral-300 font-medium">John Alan Whittle</span>
+                          <span className="text-red-700 dark:text-red-400 font-medium">John Alan Whittle</span>
                         </span>
 
                         <button

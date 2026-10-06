@@ -179,7 +179,7 @@ export const GuidedMeditationTimer: React.FC<GuidedMeditationTimerProps> = ({
             Guided Meditation & Mindful Connection
           </h3>
           <p className="text-xs text-neutral-400 mt-1 max-w-lg leading-relaxed">
-            Enter a period of peaceful silence to connect with John Alan Whittle in spirit, still the
+            Enter a period of peaceful silence to connect with <span className="text-red-700 dark:text-red-400">John Alan Whittle</span> in spirit, still the
             mind, and recharge your inner Qi.
           </p>
         </div>
@@ -326,7 +326,7 @@ export const GuidedMeditationTimer: React.FC<GuidedMeditationTimerProps> = ({
               Session Complete
             </h4>
             <p className="text-xs text-neutral-300 leading-relaxed">
-              You dedicated {selectedMinutes} minutes of mindful silence to connect with John Alan Whittle.
+              You dedicated {selectedMinutes} minutes of mindful silence to connect with <span className="text-red-700 dark:text-red-400">John Alan Whittle</span>.
               His martial spirit, Reiki wisdom, and love remain quietly with you always.
             </p>
             <div className="pt-2 flex items-center justify-center gap-3">
@@ -392,7 +392,7 @@ export const GuidedMeditationTimer: React.FC<GuidedMeditationTimerProps> = ({
         </div>
 
         <div className="text-[11px] text-neutral-500 font-sans">
-          <span>In Memory of John Alan Whittle · </span>
+          <span>In Memory of <span className="text-red-700 dark:text-red-400">John Alan Whittle</span> · </span>
           <span className="font-calligraphy text-amber-400/90">慎終追遠，民德歸厚矣</span>
         </div>
       </div>

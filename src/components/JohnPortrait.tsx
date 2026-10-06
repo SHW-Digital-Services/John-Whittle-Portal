@@ -54,7 +54,7 @@ export const JohnPortrait: React.FC<JohnPortraitProps> = ({
             <span className="font-calligraphy text-lg sm:text-2xl text-amber-300 font-bold tracking-wider">
               約翰
             </span>
-            <span className="text-[10px] sm:text-xs font-serif text-neutral-300 font-medium tracking-wide mt-0.5 leading-tight">
+            <span className="text-[10px] sm:text-xs font-serif text-red-700 dark:text-red-400 font-medium tracking-wide mt-0.5 leading-tight">
               John Alan Whittle
             </span>
             <span className="font-calligraphy text-[9px] text-emerald-400/90 mt-0.5">

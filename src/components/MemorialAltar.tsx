@@ -171,7 +171,7 @@ export const MemorialAltar: React.FC<MemorialAltarProps> = ({ isDarkMode, onOffe
           </div>
 
           <p className="text-xs sm:text-sm text-neutral-400 max-w-md mx-auto leading-relaxed pt-2">
-            The sacred memorial shrine of John Alan Whittle. Light a stick of sandalwood incense, ring the singing bowl, offer fresh tea, or enter into mindful silence below.
+            The sacred memorial shrine of <span className="text-red-700 dark:text-red-400">John Alan Whittle</span>. Light a stick of sandalwood incense, ring the singing bowl, offer fresh tea, or enter into mindful silence below.
           </p>
 
           {/* Active Action Toast */}
@@ -188,7 +188,7 @@ export const MemorialAltar: React.FC<MemorialAltarProps> = ({ isDarkMode, onOffe
           )}
         </div>
 
-        <div className="relative z-10 mx-auto mt-6 grid max-w-2xl grid-cols-1 gap-4 text-left sm:grid-cols-2">
+        <div className="relative z-10 mx-auto mt-6 grid max-w-md grid-cols-1 gap-4 text-left">
           <div className="space-y-2">
             <label htmlFor="altar-audio-track" className="block text-xs text-neutral-300">Background music for altar actions</label>
             <select id="altar-audio-track" value={altarAudio.selectedAudioId} disabled={!audioTracks.length} onChange={event => altarAudio.setSelectedAudioId(event.target.value)} className="w-full rounded-lg border border-neutral-700 bg-neutral-950 p-2 text-sm text-neutral-100">
@@ -198,16 +198,6 @@ export const MemorialAltar: React.FC<MemorialAltarProps> = ({ isDarkMode, onOffe
             </select>
             {altarAudio.audioError && <p role="alert" className="text-xs text-red-400">{altarAudio.audioError}</p>}
             {audioTracks.length === 0 && <p className="text-xs text-neutral-500">The portal owner can add background music from the upload button.</p>}
-          </div>
-          <div className="space-y-2">
-            <label htmlFor="meditation-audio-track" className="block text-xs text-neutral-300">Meditation sound for {selectedMeditationDuration}-minute stillness</label>
-            <select id="meditation-audio-track" value={meditationAudio.selectedAudioId} disabled={!tracksForSelectedDuration.length} onChange={event => meditationAudio.setSelectedAudioId(event.target.value)} className="w-full rounded-lg border border-neutral-700 bg-neutral-950 p-2 text-sm text-neutral-100">
-              {tracksForSelectedDuration.length
-                ? tracksForSelectedDuration.map(track => <option key={track.id} value={track.id}>{track.title}</option>)
-                : <option value="">No meditation audio uploaded yet</option>}
-            </select>
-            {meditationAudio.audioError && <p role="alert" className="text-xs text-red-400">{meditationAudio.audioError}</p>}
-            {tracksForSelectedDuration.length === 0 && <p className="text-xs text-neutral-500">The portal owner can add a meditation track for this duration from the upload button.</p>}
           </div>
         </div>
         <audio ref={altarAudio.audioRef} src={altarAudio.audioUrl || undefined} preload="auto" onError={() => altarAudio.setAudioError('The selected background music could not be played.')} />

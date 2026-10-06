@@ -85,7 +85,7 @@ export const SentJournal: React.FC<SentJournalProps> = ({ onBackToPortal, isDark
           </h2>
           <p className="text-xs text-neutral-400 mt-1">
             A sacred archive of every word, prayer, and voice recording sent to{' '}
-            <span className="font-semibold text-neutral-200">John Alan Whittle</span>
+            <span className="font-semibold text-red-700 dark:text-red-400">John Alan Whittle</span>
           </p>
           <p className="text-xs text-neutral-500 mt-1">
             Your messages are private to you and the verified portal owner.

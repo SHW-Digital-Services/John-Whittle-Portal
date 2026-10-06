@@ -37,7 +37,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
         <div className="max-w-2xl mx-auto">
           <p className="text-sm sm:text-base text-neutral-300 dark:text-neutral-300 leading-relaxed font-sans">
-            A sacred, quiet bridge to communicate with <strong className="font-semibold text-neutral-100">John Alan Whittle</strong> in heaven.
+            A sacred, quiet bridge to communicate with             <strong className="font-semibold text-red-700 dark:text-red-400">John Alan Whittle</strong> in heaven.
             This portal does not generate automated responses—it exists as a peaceful sanctuary for you to speak,
             record your voice, release sky lanterns, and share memories whenever you miss him.
           </p>

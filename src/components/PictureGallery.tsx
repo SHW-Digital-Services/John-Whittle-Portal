@@ -95,7 +95,7 @@ export function PictureGallery({ items, pendingItems, loading, error, isDarkMode
   const pending = pendingItems.filter(item => item.kind === 'picture' || item.kind === 'video');
   const audioTracks = items.filter(item => item.kind === 'audio');
   return <section className="max-w-5xl mx-auto px-4 sm:px-6 py-10 space-y-6">
-    <div className="flex flex-wrap justify-between items-center gap-4"><div><h1 className="font-serif text-3xl">Photo & Video Gallery</h1><p className="text-sm opacity-70 mt-2">Approved memories of John Alan Whittle, for logged-in members.</p></div>
+    <div className="flex flex-wrap justify-between items-center gap-4"><div><h1 className="font-serif text-3xl">Photo & Video Gallery</h1><p className="text-sm opacity-70 mt-2">Approved memories of <span className="text-red-700 dark:text-red-400">John Alan Whittle</span>, for logged-in members.</p></div>
       <div className="flex flex-wrap gap-2">
         <button onClick={onUpload} className="inline-flex items-center gap-2 rounded-xl bg-purple-600 px-4 py-2 text-white text-sm"><ImagePlus className="h-4 w-4" /> {canManage ? 'Upload media' : 'Submit a photo or video'}</button>
         {canManage && <button type="button" onClick={() => setAdminOpen(open => !open)} aria-expanded={adminOpen} className="inline-flex items-center gap-2 rounded-xl border border-amber-500/50 px-4 py-2 text-sm text-amber-400"><LayoutDashboard className="h-4 w-4" /> {adminOpen ? 'Close admin panel' : 'Media admin'}</button>}

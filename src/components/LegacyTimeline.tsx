@@ -337,7 +337,7 @@ export const LegacyTimeline: React.FC<LegacyTimelineProps> = ({
             No Milestones Recorded in Database Yet
           </h4>
           <p className="text-xs text-neutral-500 max-w-sm mx-auto">
-            Click "Add Milestone Memory" above to record a significant family, friends, or life journey memory of John Alan Whittle.
+            Click "Add Milestone Memory" above to record a significant family, friends, or life journey memory of <span className="text-red-700 dark:text-red-400">John Alan Whittle</span>.
           </p>
         </div>
       ) : (
@@ -410,7 +410,7 @@ export const LegacyTimeline: React.FC<LegacyTimelineProps> = ({
 
                   <div className="mt-4 pt-2 border-t border-neutral-800/60 flex items-center justify-between text-[11px] text-neutral-500">
                     <span>
-                      Preserved in honor of <strong className="text-neutral-300">John Alan Whittle</strong>
+                      Preserved in honor of <strong className="text-red-700 dark:text-red-400">John Alan Whittle</strong>
                     </span>
                     {m.authorName && (
                       <span>Shared by {m.authorName}</span>

@@ -314,7 +314,7 @@ export default function App() {
           </div>
 
           <p className="text-[10px] text-neutral-600 pt-3">
-            In Eternal Memory of John Alan Whittle · All communications, milestones, and condolences are preserved in the Firestore database.
+            In Eternal Memory of <span className="text-red-700 dark:text-red-400">John Alan Whittle</span> · All communications, milestones, and condolences are preserved in the Firestore database.
           </p>
         </div>
       </footer>

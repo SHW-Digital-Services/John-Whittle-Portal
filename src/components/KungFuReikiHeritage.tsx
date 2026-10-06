@@ -92,7 +92,7 @@ export const KungFuReikiHeritage: React.FC<KungFuReikiHeritageProps> = ({ isDark
 
             <p className="text-sm text-neutral-300 leading-relaxed mt-4">
               Kung Fu (Gongfu 功夫) translates to supreme skill acquired through patient, devoted effort over time.
-              For <span className="font-medium text-neutral-100">John Alan Whittle</span>, martial arts was not about conflict, but about the mastery of self,
+              For <span className="font-medium text-red-700 dark:text-red-400">John Alan Whittle</span>, martial arts was not about conflict, but about the mastery of self,
               the cultivation of internal vitality (Qi 气), and the solemn duty to shield and nurture loved ones.
             </p>
 
@@ -120,7 +120,7 @@ export const KungFuReikiHeritage: React.FC<KungFuReikiHeritageProps> = ({ isDark
                 "Like bamboo in the wind, bending without breaking; like water flowing through stone, gentle yet carving the earth."
               </p>
               <p className="text-xs text-neutral-400 font-sans">
-                The eternal martial legacy of John Alan Whittle
+                The eternal martial legacy of <span className="text-red-700 dark:text-red-400">John Alan Whittle</span>
               </p>
             </div>
           </div>
@@ -137,7 +137,7 @@ export const KungFuReikiHeritage: React.FC<KungFuReikiHeritageProps> = ({ isDark
                   Universal Life Energy (靈氣)
                 </span>
                 <h3 className="text-xl font-serif font-semibold text-neutral-100 mt-1">
-                  The Healing Touch of John Alan Whittle
+                  The Healing Touch of <span className="text-red-700 dark:text-red-400">John Alan Whittle</span>
                 </h3>
               </div>
               <span className="font-calligraphy text-2xl text-purple-400">大光明</span>
