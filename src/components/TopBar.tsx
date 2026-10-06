@@ -1,9 +1,9 @@
 import React from 'react';
-import { Sun, Moon, Send, Sparkles, Feather, User, LogIn, Lock, Clock } from 'lucide-react';
+import { Sun, Moon, Send, Sparkles, Feather, User, LogIn, Lock, Clock, ScrollText } from 'lucide-react';
 import { UserProfile } from '../types/memorial';
 import { JohnPortrait } from './JohnPortrait';
 
-export type NavTab = 'landing' | 'portal' | 'journal' | 'timeline' | 'condolences' | 'heritage' | 'altar' | 'gallery';
+export type NavTab = 'landing' | 'portal' | 'journal' | 'timeline' | 'condolences' | 'eulogy' | 'heritage' | 'altar' | 'gallery';
 
 interface TopBarProps {
   activeTab: NavTab;
@@ -23,9 +23,9 @@ export const TopBar: React.FC<TopBarProps> = ({
   onOpenAuth,
 }) => {
   const handleNavClick = (tab: NavTab) => {
-    // Unauthenticated users can access landing (Home) and condolences (Read Only)
+    // Unauthenticated users can access public memorial pages.
     if (!currentUser) {
-      if (tab === 'landing' || tab === 'condolences') {
+      if (tab === 'landing' || tab === 'condolences' || tab === 'eulogy') {
         onTabChange(tab);
       } else {
         onOpenAuth();
@@ -118,6 +118,16 @@ export const TopBar: React.FC<TopBarProps> = ({
                 Read Only
               </span>
             )}
+          </button>
+
+          <button
+            onClick={() => handleNavClick('eulogy')}
+            className={`hover:text-purple-400 transition-colors whitespace-nowrap flex items-center gap-1.5 ${
+              activeTab === 'eulogy' ? 'text-purple-400 font-semibold border-b-2 border-purple-500 pb-0.5' : ''
+            }`}
+          >
+            <ScrollText className="h-3.5 w-3.5" />
+            <span>Eulogy</span>
           </button>
 
           {currentUser && <button onClick={() => handleNavClick('gallery')} className={`hover:text-purple-400 transition-colors whitespace-nowrap ${activeTab === 'gallery' ? 'text-purple-400 font-semibold' : ''}`}>Gallery</button>}
@@ -233,6 +243,15 @@ export const TopBar: React.FC<TopBarProps> = ({
           }`}
         >
           <span>Condolences</span>
+        </button>
+
+        <button
+          onClick={() => handleNavClick('eulogy')}
+          className={`px-2 py-1 rounded whitespace-nowrap flex items-center gap-0.5 ${
+            activeTab === 'eulogy' ? 'text-purple-400 font-semibold bg-neutral-900' : 'text-neutral-400'
+          }`}
+        >
+          <span>Eulogy</span>
         </button>
 
         {currentUser && (

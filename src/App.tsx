@@ -8,6 +8,7 @@ import { TopBar, NavTab } from './components/TopBar';
 import { LandingPage } from './components/LandingPage';
 import { CelestialPortal } from './components/CelestialPortal';
 import { SentJournal } from './components/SentJournal';
+import { EulogyPage } from './components/EulogyPage';
 import { LegacyTimeline } from './components/LegacyTimeline';
 import { CondolencesPage } from './components/CondolencesPage';
 import { KungFuReikiHeritage } from './components/KungFuReikiHeritage';
@@ -147,9 +148,9 @@ export default function App() {
     setBurstCount((prev) => prev + 1);
   };
 
-  // Safe tab change handler: unauthenticated users can access home and condolences (read only)
+  // Unauthenticated visitors can access public pages; all other portals require login.
   const handleTabChange = (tab: NavTab) => {
-    if (!currentUser && tab !== 'landing' && tab !== 'condolences') {
+    if (!currentUser && tab !== 'landing' && tab !== 'condolences' && tab !== 'eulogy') {
       setIsAuthOpen(true);
       return;
     }
@@ -178,7 +179,7 @@ export default function App() {
       {/* Main Sanctuary Content */}
       <main className="flex-1 relative z-10 pb-24">
         {!currentUser ? (
-          /* For a signed out user: can access home page or read-only condolences */
+          /* Signed-out visitors can access home, condolences, and the eulogy page. */
           <>
             {activeTab === 'condolences' ? (
               <CondolencesPage
@@ -187,6 +188,8 @@ export default function App() {
                 onTributeLit={() => handleAscendOffering('candle')}
                 onOpenAuth={() => setIsAuthOpen(true)}
               />
+            ) : activeTab === 'eulogy' ? (
+              <EulogyPage currentUser={currentUser} isDarkMode={isDarkMode} />
             ) : (
               <LandingPage
                 onNavigate={handleTabChange}
@@ -241,6 +244,10 @@ export default function App() {
                 onTributeLit={() => handleAscendOffering('candle')}
                 onOpenAuth={() => setIsAuthOpen(true)}
               />
+            )}
+
+            {activeTab === 'eulogy' && (
+              <EulogyPage currentUser={currentUser} isDarkMode={isDarkMode} />
             )}
 
             {activeTab === 'gallery' && (
