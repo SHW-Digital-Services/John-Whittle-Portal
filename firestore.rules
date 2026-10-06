@@ -136,7 +136,7 @@ service cloud.firestore {
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['candlesLit'])
         && request.resource.data.candlesLit is int
         && request.resource.data.candlesLit == resource.data.get('candlesLit', 0) + 1;
-      allow delete: if isSignedIn() && resource.data.authorId == request.auth.uid;
+      allow delete: if false;
     }
 
     match /milestones/{milestoneId} {
