@@ -397,7 +397,7 @@ export const CondolencesPage: React.FC<CondolencesPageProps> = ({
               {showSuccessToast && (
                 <div className="mb-4 rounded-lg border border-emerald-500/30 bg-emerald-950/30 p-3 text-xs text-emerald-300 flex items-center gap-2">
                   <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
-                  <span>Your condolence has been recorded to the database and added to the film credits.</span>
+                  <span>Your condolence has been saved and appears in the memorial.</span>
                 </div>
               )}
 

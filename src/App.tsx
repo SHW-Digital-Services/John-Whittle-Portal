@@ -52,7 +52,7 @@ export default function App() {
   const [mediaLoadError, setMediaLoadError] = useState('');
   const canManageUploads = canManageMedia(currentUser);
   const backgroundAudioTracks = useMemo(
-    () => mediaItems.filter(item => item.kind === 'audio' && (item.audioPurpose || 'background') === 'background'),
+    () => mediaItems.filter(item => item.kind === 'audio' && ['background', 'altar'].includes(item.audioPurpose || 'background')),
     [mediaItems],
   );
   const meditationAudioTracks = useMemo(

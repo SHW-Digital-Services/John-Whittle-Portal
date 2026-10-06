@@ -210,7 +210,7 @@ export const MemorialAltar: React.FC<MemorialAltarProps> = ({ isDarkMode, onOffe
             {tracksForSelectedDuration.length === 0 && <p className="text-xs text-neutral-500">The portal owner can add a meditation track for this duration from the upload button.</p>}
           </div>
         </div>
-        <audio ref={altarAudio.audioRef} src={altarAudio.audioUrl || undefined} preload="auto" onError={() => altarAudio.setAudioError('The selected altar audio could not be played.')} />
+        <audio ref={altarAudio.audioRef} src={altarAudio.audioUrl || undefined} preload="auto" onError={() => altarAudio.setAudioError('The selected background music could not be played.')} />
         <audio ref={meditationAudio.audioRef} src={meditationAudio.audioUrl || undefined} preload="auto" onError={() => meditationAudio.setAudioError('The selected meditation audio could not be played.')} />
 
         <IncenseBurner count={shrine.incenseLitCount || 0} onLight={handleLightIncense} onPlaySound={altarAudio.play} />

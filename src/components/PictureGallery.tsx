@@ -64,7 +64,7 @@ function AdminMediaRow({ item, isDarkMode, onDelete }: {
     finally { setBusy(false); }
   };
   const purpose = item.kind === 'audio'
-    ? item.audioPurpose === 'altar' ? 'Altar sound' : item.audioPurpose === 'meditation' ? 'Meditation sound' : 'Background music'
+    ? item.audioPurpose === 'meditation' ? 'Meditation sound' : 'Background music'
     : item.kind === 'video' ? 'Published video' : 'Published photo';
   return <article className={`flex flex-wrap items-center justify-between gap-3 rounded-xl border p-3 ${isDarkMode ? 'border-neutral-700 bg-neutral-900' : 'border-stone-200 bg-white'}`}>
     <div className="min-w-0">
