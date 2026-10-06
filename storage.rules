@@ -3,7 +3,7 @@ service firebase.storage {
   match /b/{bucket}/o {
     function isMediaManager() {
       return request.auth != null
-        && request.auth.token.email == 'scotthw1984@gmail.com'
+        && request.auth.token.email == 'sphw1984@gmail.com'
         && request.auth.token.email_verified == true;
     }
     match /memorial-media/{userId}/{kind}/{fileId} {

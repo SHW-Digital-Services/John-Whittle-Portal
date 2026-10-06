@@ -2,7 +2,8 @@
   {
     "origin": [
       "http://localhost:3000",
-      "http://localhost:4173"
+      "http://localhost:4173",
+      "https://johnwhittle.vercel.app"
     ],
     "method": [
       "GET"

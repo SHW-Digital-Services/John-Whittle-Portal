@@ -1,4 +1,6 @@
 import {
+  runTransaction,
+  increment,
   collection,
   doc,
   addDoc,
@@ -12,7 +14,7 @@ import {
   orderBy,
   limit,
 } from 'firebase/firestore';
-import { db } from '../lib/firebase';
+import { auth, db } from '../lib/firebase';
 import { CelestialMessage, Condolence, LegacyMilestone, MemorialShrineState } from '../types/memorial';
 import {
   getStoredMessages,
@@ -33,7 +35,8 @@ const SHRINE_DOC = 'shrine';
 // Save a message to Firestore & localStorage
 export async function createCelestialMessage(msg: Omit<CelestialMessage, 'id'>): Promise<string> {
   try {
-    const docRef = await addDoc(collection(db, MESSAGES_COL), msg);
+    const payload = Object.fromEntries(Object.entries(msg).filter(([, value]) => value !== undefined));
+    const docRef = await addDoc(collection(db, MESSAGES_COL), payload);
     const fullMsg: CelestialMessage = { ...msg, id: docRef.id };
     saveLocalMessage(fullMsg);
     return docRef.id;
@@ -103,7 +106,7 @@ export async function lightCandleForCondolence(condolenceId: string, currentCoun
   try {
     incrementLocalCandle(condolenceId);
     const docRef = doc(db, CONDOLENCES_COL, condolenceId);
-    await updateDoc(docRef, { candlesLit: currentCount + 1 });
+    await updateDoc(docRef, { candlesLit: increment(1) });
   } catch (err) {
     console.warn('Updated candle locally; remote sync deferred', err);
   }
@@ -212,14 +215,33 @@ export function subscribeToShrineState(onUpdate: (shrine: MemorialShrineState) =
   }
 }
 
-// Update shrine counters in Firestore
+// Use the current shared totals, so concurrent offerings cannot overwrite each other.
 export async function updateRemoteShrine(updater: (prev: MemorialShrineState) => MemorialShrineState): Promise<MemorialShrineState> {
-  const next = updateLocalShrine(updater);
+  if (!auth.currentUser) throw new Error('Please sign in to make an altar offering.');
   try {
-    const docRef = doc(db, SHRINE_DOC, 'global');
-    await setDoc(docRef, next, { merge: true });
+    const next = await runTransaction(db, async transaction => {
+      const docRef = doc(db, SHRINE_DOC, 'global');
+      const snapshot = await transaction.get(docRef);
+      const base: MemorialShrineState = {
+        incenseLitCount: 0, candlesLitCount: 0, bellRungCount: 0,
+        lanternsReleasedCount: 0, teaOfferedCount: 0, meditationsCompletedCount: 0,
+        ...(snapshot.exists() ? snapshot.data() : {}),
+      };
+      const updated = updater({ ...base });
+      const fields = Object.keys(base) as (keyof MemorialShrineState)[];
+      const changed = fields.filter(field => updated[field] !== base[field]);
+      if (!changed.length) return base;
+      if (changed.length !== 1 || updated[changed[0]] !== (base[changed[0]] || 0) + 1) {
+        throw new Error('An offering can only increase one altar counter by one.');
+      }
+      if (snapshot.exists()) transaction.update(docRef, { [changed[0]]: updated[changed[0]] });
+      else transaction.set(docRef, updated);
+      return updated;
+    });
+    updateLocalShrine(() => next);
+    return next;
   } catch (err) {
     console.warn('Shrine updated locally; Firestore sync deferred', err);
+    return updateLocalShrine(updater);
   }
-  return next;
 }
