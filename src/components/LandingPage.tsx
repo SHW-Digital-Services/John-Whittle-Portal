@@ -60,7 +60,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
         {/* State 1: User Needs to Sign in First */}
         {!currentUser ? (
-          <div className="max-w-xl mx-auto rounded-3xl border border-purple-500/50 bg-gradient-to-b from-neutral-900/90 via-purple-950/30 to-neutral-950/90 p-8 shadow-2xl shadow-purple-950/50 text-center space-y-4 backdrop-blur-md">
+          <div className="max-w-xl mx-auto rounded-3xl border border-purple-500/50 bg-gradient-to-b from-neutral-900/90 via-purple-950/30 to-neutral-950/90 p-5 sm:p-8 shadow-2xl shadow-purple-950/50 text-center space-y-4 backdrop-blur-md">
             <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-purple-600/20 border border-purple-500/40 text-purple-300">
               <Lock className="h-6 w-6" />
             </div>

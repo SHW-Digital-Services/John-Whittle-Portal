@@ -1,18 +1,16 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Volume2, VolumeX, Play, Pause, Upload, Disc } from 'lucide-react';
+import { Volume2, VolumeX, Play, Pause, Disc } from 'lucide-react';
 import { loadMediaBlob, mediaError, MemorialMedia } from '../lib/media';
 import { setAmbientVolume, startAmbientSoundscape, stopAmbientSoundscape, stopSynthesizedAudio } from '../utils/audioSynthesis';
 
 interface AudioPlayerBarProps {
   isDarkMode: boolean;
   tracks: MemorialMedia[];
-  canUpload: boolean;
   mediaErrorMessage: string;
-  onOpenUploads: () => void;
   isLoading: boolean;
 }
 
-export const AudioPlayerBar: React.FC<AudioPlayerBarProps> = ({ isDarkMode, tracks, canUpload, mediaErrorMessage, onOpenUploads, isLoading }) => {
+export const AudioPlayerBar: React.FC<AudioPlayerBarProps> = ({ isDarkMode, tracks, mediaErrorMessage, isLoading }) => {
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [isMuted, setIsMuted] = useState<boolean>(false);
   const [volume, setVolume] = useState<number>(0.5);
@@ -200,7 +198,7 @@ export const AudioPlayerBar: React.FC<AudioPlayerBarProps> = ({ isDarkMode, trac
       )}
 
       {/* Persistent Sanctuary Audio Floating Dock */}
-      <div className="fixed bottom-4 right-4 z-40 w-[calc(100vw-5.5rem)] max-w-sm">
+      <div className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] left-[max(4.5rem,env(safe-area-inset-left))] right-[max(1rem,env(safe-area-inset-right))] z-40 w-auto max-w-sm">
         <div
           className={`relative rounded-xl border backdrop-blur-md shadow-lg transition-all duration-300 ${
             isDarkMode
@@ -212,7 +210,7 @@ export const AudioPlayerBar: React.FC<AudioPlayerBarProps> = ({ isDarkMode, trac
           <div className="flex items-center gap-3 px-3.5 py-2.5">
             <button
               onClick={() => setIsExpanded(!isExpanded)}
-              className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-neutral-800/80 text-purple-400 hover:text-purple-300 transition-colors"
+              className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-neutral-800/80 text-purple-400 hover:text-purple-300 transition-colors"
               title="Click to expand music settings & track loader"
               aria-label="Expand audio settings"
             >
@@ -249,7 +247,7 @@ export const AudioPlayerBar: React.FC<AudioPlayerBarProps> = ({ isDarkMode, trac
               <button
                 onClick={togglePlay}
                 disabled={tracks.length > 0 && !customAudioUrl}
-                className="flex h-8 w-8 items-center justify-center rounded-md bg-purple-600 text-white hover:bg-purple-500 transition-colors shadow-sm shadow-purple-600/30"
+                className="flex h-10 w-10 items-center justify-center rounded-md bg-purple-600 text-white hover:bg-purple-500 transition-colors shadow-sm shadow-purple-600/30"
                 title={isPlaying ? 'Pause Background Music' : 'Play Background Music'}
                 aria-label={isPlaying ? 'Pause music' : 'Play music'}
               >
@@ -285,7 +283,7 @@ export const AudioPlayerBar: React.FC<AudioPlayerBarProps> = ({ isDarkMode, trac
                     setIsVolumeControlOpen(shouldPin);
                     toggleMute();
                   }}
-                  className="flex h-8 w-8 items-center justify-center rounded-md text-neutral-400 hover:text-neutral-200 transition-colors"
+                  className="flex h-10 w-10 items-center justify-center rounded-md text-neutral-400 hover:text-neutral-200 transition-colors"
                   title={isMuted ? 'Unmute and show volume' : 'Mute and show volume'}
                   aria-label={isMuted ? 'Unmute music and show volume' : 'Mute music and show volume'}
                   aria-expanded={isVolumeControlOpen}
@@ -320,7 +318,7 @@ export const AudioPlayerBar: React.FC<AudioPlayerBarProps> = ({ isDarkMode, trac
                       step="0.05"
                       value={isMuted ? 0 : volume}
                       onChange={(event) => handleVolumeChange(Number(event.target.value))}
-                      className="w-full accent-purple-500"
+                      className="h-8 w-full accent-purple-500"
                       aria-label="Background music volume"
                     />
                   </div>
@@ -331,7 +329,7 @@ export const AudioPlayerBar: React.FC<AudioPlayerBarProps> = ({ isDarkMode, trac
 
           {/* Expanded Configuration Drawer */}
           {isExpanded && (
-            <div className="px-3.5 pb-3.5 pt-1 border-t border-neutral-800/60 dark:border-neutral-800/80 space-y-3">
+            <div className="max-h-[min(60dvh,32rem)] overflow-y-auto overscroll-contain px-3.5 pb-3.5 pt-1 border-t border-neutral-800/60 dark:border-neutral-800/80 space-y-3">
               {/* Audio Visualizer Bars */}
               <div className="flex items-end justify-center gap-1 h-6 py-1">
                 {[40, 75, 50, 90, 60, 30, 85, 45, 95, 70, 35, 80].map((h, i) => (
@@ -361,23 +359,13 @@ export const AudioPlayerBar: React.FC<AudioPlayerBarProps> = ({ isDarkMode, trac
                   step="0.05"
                   value={isMuted ? 0 : volume}
                   onChange={(e) => handleVolumeChange(parseFloat(e.target.value))}
-                  className="w-full accent-purple-500 cursor-pointer h-1.5 bg-neutral-700 rounded-lg"
+                  className="w-full accent-purple-500 cursor-pointer h-6 bg-neutral-700 rounded-lg"
                   aria-label="Volume slider"
                 />
                 <span className="font-mono text-[11px] w-8 text-right">
                   {Math.round((isMuted ? 0 : volume) * 100)}%
                 </span>
               </div>
-
-              {canUpload && <div>
-                <button
-                  onClick={onOpenUploads}
-                  className="w-full px-2.5 py-1.5 rounded-md flex items-center justify-center gap-1.5 transition-colors font-medium bg-neutral-800/50 text-neutral-400 hover:text-neutral-200"
-                >
-                  <Upload className="h-3.5 w-3.5 text-emerald-400" />
-                  Upload tracks
-                </button>
-              </div>}
 
               <div>
                 <label htmlFor="shared-audio-track" className="block text-xs mb-1">Background music</label>

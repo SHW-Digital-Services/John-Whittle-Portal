@@ -61,7 +61,6 @@ export const CondolencesPage: React.FC<CondolencesPageProps> = ({
   const [viewMode, setViewMode] = useState<'credits' | 'feed'>('credits');
   const [isScrolling, setIsScrolling] = useState<boolean>(true);
   const [scrollSpeed, setScrollSpeed] = useState<number>(0.8); // 0.5 = slow, 0.8 = classic film, 1.5 = fast
-  const [isHovered, setIsHovered] = useState<boolean>(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   // Real-time Firestore subscription
@@ -96,7 +95,7 @@ export const CondolencesPage: React.FC<CondolencesPageProps> = ({
       const deltaTime = timestamp - lastTime;
       lastTime = timestamp;
 
-      if (isScrolling && !isHovered && container) {
+      if (isScrolling && container) {
         // Base speed: 28px per second multiplied by user speed factor
         const pixelsToScroll = (28 * scrollSpeed * deltaTime) / 1000;
         container.scrollTop += pixelsToScroll;
@@ -112,7 +111,7 @@ export const CondolencesPage: React.FC<CondolencesPageProps> = ({
 
     animFrameId = requestAnimationFrame(scrollStep);
     return () => cancelAnimationFrame(animFrameId);
-  }, [viewMode, isScrolling, isHovered, scrollSpeed, condolences.length]);
+  }, [viewMode, isScrolling, scrollSpeed, condolences.length]);
 
   const handleRestartCredits = () => {
     if (scrollContainerRef.current) {
@@ -274,12 +273,12 @@ export const CondolencesPage: React.FC<CondolencesPageProps> = ({
       )}
 
       {/* Mode Switcher Bar & Cinematic Scroll Controls */}
-      <div className="flex flex-wrap items-center justify-between gap-3 p-2.5 rounded-2xl bg-neutral-900/70 border border-neutral-800 text-xs backdrop-blur-sm">
+      <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center justify-between gap-3 p-2.5 rounded-2xl bg-neutral-900/70 border border-neutral-800 text-xs backdrop-blur-sm">
         {/* Left: View Mode Toggle */}
-        <div className="flex items-center gap-1.5 p-1 bg-neutral-950 border border-neutral-800 rounded-xl">
+        <div className="grid grid-cols-2 w-full sm:w-auto items-center gap-1.5 p-1 bg-neutral-950 border border-neutral-800 rounded-xl">
           <button
             onClick={() => setViewMode('credits')}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium transition-all ${
+            className={`min-h-10 inline-flex items-center justify-center gap-1.5 px-2 sm:px-3 py-1.5 rounded-lg text-[10px] sm:text-xs font-medium transition-all ${
               viewMode === 'credits'
                 ? 'bg-purple-600 text-white shadow-sm'
                 : 'text-neutral-400 hover:text-neutral-200'
@@ -291,7 +290,7 @@ export const CondolencesPage: React.FC<CondolencesPageProps> = ({
 
           <button
             onClick={() => setViewMode('feed')}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium transition-all ${
+            className={`min-h-10 inline-flex items-center justify-center gap-1.5 px-2 sm:px-3 py-1.5 rounded-lg text-[10px] sm:text-xs font-medium transition-all ${
               viewMode === 'feed'
                 ? 'bg-purple-600 text-white shadow-sm'
                 : 'text-neutral-400 hover:text-neutral-200'
@@ -308,7 +307,7 @@ export const CondolencesPage: React.FC<CondolencesPageProps> = ({
             {/* Play / Pause Toggle */}
             <button
               onClick={() => setIsScrolling(!isScrolling)}
-              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-neutral-950 border border-neutral-800 hover:text-neutral-100 hover:bg-neutral-800 transition-colors"
+              className="min-h-10 inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-neutral-950 border border-neutral-800 hover:text-neutral-100 hover:bg-neutral-800 transition-colors"
               title={isScrolling ? 'Pause Credits Scroll' : 'Resume Credits Scroll'}
             >
               {isScrolling ? (
@@ -329,7 +328,7 @@ export const CondolencesPage: React.FC<CondolencesPageProps> = ({
               <span className="text-[10px] text-neutral-500 pl-1">Speed:</span>
               <button
                 onClick={() => setScrollSpeed(0.5)}
-                className={`px-1.5 py-0.5 rounded text-[10px] ${
+                className={`min-h-8 px-2 py-1 rounded text-[10px] ${
                   scrollSpeed === 0.5 ? 'bg-neutral-800 text-purple-300 font-bold' : 'hover:text-neutral-200'
                 }`}
                 title="Gentle slow pace"
@@ -338,7 +337,7 @@ export const CondolencesPage: React.FC<CondolencesPageProps> = ({
               </button>
               <button
                 onClick={() => setScrollSpeed(0.8)}
-                className={`px-1.5 py-0.5 rounded text-[10px] ${
+                className={`min-h-8 px-2 py-1 rounded text-[10px] ${
                   scrollSpeed === 0.8 ? 'bg-neutral-800 text-purple-300 font-bold' : 'hover:text-neutral-200'
                 }`}
                 title="Classic film credits pace"
@@ -347,7 +346,7 @@ export const CondolencesPage: React.FC<CondolencesPageProps> = ({
               </button>
               <button
                 onClick={() => setScrollSpeed(1.5)}
-                className={`px-1.5 py-0.5 rounded text-[10px] ${
+                className={`min-h-8 px-2 py-1 rounded text-[10px] ${
                   scrollSpeed === 1.5 ? 'bg-neutral-800 text-purple-300 font-bold' : 'hover:text-neutral-200'
                 }`}
                 title="Faster pace"
@@ -359,7 +358,7 @@ export const CondolencesPage: React.FC<CondolencesPageProps> = ({
             {/* Restart to Beginning */}
             <button
               onClick={handleRestartCredits}
-              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-neutral-950 border border-neutral-800 hover:text-neutral-100 hover:bg-neutral-800 transition-colors"
+              className="min-h-10 inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-neutral-950 border border-neutral-800 hover:text-neutral-100 hover:bg-neutral-800 transition-colors"
               title="Restart from beginning of credits"
             >
               <RotateCcw className="h-3 w-3" />
@@ -367,7 +366,7 @@ export const CondolencesPage: React.FC<CondolencesPageProps> = ({
             </button>
 
             <span className="hidden sm:inline text-[10px] text-neutral-500 italic pl-1">
-              (Hover pauses scroll)
+              (Use Pause to stop the scroll)
             </span>
           </div>
         )}
@@ -381,7 +380,7 @@ export const CondolencesPage: React.FC<CondolencesPageProps> = ({
             /* Active Form for Authenticated Users */
             <div
               id="condolence-form"
-              className={`rounded-2xl border p-6 backdrop-blur-md sticky top-20 transition-all shadow-lg ${
+              className={`rounded-2xl border p-4 sm:p-6 backdrop-blur-md lg:sticky lg:top-20 transition-all shadow-lg ${
                 isDarkMode
                   ? 'bg-neutral-900/90 border-neutral-800 text-neutral-100'
                   : 'bg-white/95 border-stone-200 text-neutral-900 shadow-stone-200/50'
@@ -510,7 +509,7 @@ export const CondolencesPage: React.FC<CondolencesPageProps> = ({
           ) : (
             /* Visitor Read-Only Explanatory Card */
             <div
-              className={`rounded-2xl border p-6 backdrop-blur-md sticky top-20 transition-all shadow-lg space-y-4 text-center ${
+              className={`rounded-2xl border p-4 sm:p-6 backdrop-blur-md lg:sticky lg:top-20 transition-all shadow-lg space-y-4 text-center ${
                 isDarkMode
                   ? 'bg-neutral-900/90 border-neutral-800 text-neutral-100'
                   : 'bg-white/95 border-stone-200 text-neutral-900 shadow-stone-200/50'
@@ -574,9 +573,7 @@ export const CondolencesPage: React.FC<CondolencesPageProps> = ({
               {/* Scrollable Container with RequestAnimationFrame Auto-Crawl */}
               <div
                 ref={scrollContainerRef}
-                onMouseEnter={() => setIsHovered(true)}
-                onMouseLeave={() => setIsHovered(false)}
-                className="relative h-[620px] overflow-y-auto pr-1 text-center select-text scroll-smooth focus:outline-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+                className="relative h-[min(620px,70dvh)] min-h-80 overflow-y-auto pr-1 text-center select-text focus:outline-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
               >
                 {/* Film Opening Title Card */}
                 <div className="pt-16 pb-14 space-y-4 max-w-md mx-auto">
@@ -727,12 +724,12 @@ export const CondolencesPage: React.FC<CondolencesPageProps> = ({
              * ========================================================================= */
             <div className="space-y-4">
               {/* Filter Tabs */}
-              <div className="flex items-center justify-between gap-3 pb-3 border-b border-neutral-800">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-neutral-800">
                 <span className="text-xs uppercase tracking-wider text-neutral-400 font-medium">
                   Condolences & Memories ({condolences.length})
                 </span>
 
-                <div className="flex items-center gap-1 p-0.5 bg-neutral-950 border border-neutral-800 rounded-lg text-xs">
+                <div className="flex self-start items-center gap-1 p-0.5 bg-neutral-950 border border-neutral-800 rounded-lg text-xs">
                   <button
                     onClick={() => setFilterRole('all')}
                     className={`px-2.5 py-1 rounded transition-colors ${

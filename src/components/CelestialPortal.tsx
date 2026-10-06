@@ -232,14 +232,14 @@ export const CelestialPortal: React.FC<CelestialPortalProps> = ({
       ) : (
         /* The Sacred Communication Form */
         <div
-          className={`rounded-2xl border p-6 sm:p-8 backdrop-blur-md transition-all shadow-xl ${
+          className={`rounded-2xl border p-4 sm:p-8 backdrop-blur-md transition-all shadow-xl ${
             isDarkMode
               ? 'bg-neutral-900/80 border-neutral-800 text-neutral-100'
               : 'bg-white/95 border-stone-200 text-neutral-800 shadow-stone-200/50'
           }`}
         >
           {/* Mode Switch: Text vs Voice */}
-          <div className="flex items-center justify-between pb-6 border-b border-neutral-800/80 mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-6 border-b border-neutral-800/80 mb-6">
             <div>
               <h3 className="text-lg font-serif font-semibold flex items-center gap-2 text-neutral-100">
                 <PenLine className="h-5 w-5 text-purple-400" />
@@ -251,11 +251,11 @@ export const CelestialPortal: React.FC<CelestialPortalProps> = ({
             </div>
 
             {/* Segmented Mode Control */}
-            <div className="flex items-center gap-1 p-1 bg-neutral-950/80 border border-neutral-800 rounded-lg">
+            <div className="flex self-start sm:self-auto items-center gap-1 p-1 bg-neutral-950/80 border border-neutral-800 rounded-lg">
               <button
                 type="button"
                 onClick={() => setInputMode('text')}
-                className={`flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-medium rounded-md transition-all ${
+                className={`flex items-center gap-1.5 px-2 sm:px-3.5 py-2 text-xs font-medium rounded-md transition-all ${
                   inputMode === 'text'
                     ? 'bg-purple-600 text-white shadow-sm shadow-purple-600/30'
                     : 'text-neutral-400 hover:text-neutral-200'
@@ -270,7 +270,7 @@ export const CelestialPortal: React.FC<CelestialPortalProps> = ({
                   setInputMode('voice');
                   setShowVoiceRecorderModal(true);
                 }}
-                className={`flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-medium rounded-md transition-all ${
+                className={`flex items-center gap-1.5 px-2 sm:px-3.5 py-2 text-xs font-medium rounded-md transition-all ${
                   inputMode === 'voice'
                     ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-600/30'
                     : 'text-neutral-400 hover:text-neutral-200'

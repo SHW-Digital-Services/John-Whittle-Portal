@@ -23,7 +23,7 @@ import { PictureGallery } from './components/PictureGallery';
 import { canManageMedia } from './lib/mediaAccess';
 import { approveMedia, deleteMedia, mediaError, MemorialMedia, rejectMedia, subscribeMedia } from './lib/media';
 import { AuthModal } from './components/AuthModal';
-import { OfferingType, ThemeMode, UserProfile } from './types/memorial';
+import { OfferingType, UserProfile } from './types/memorial';
 import { auth, testConnection } from './lib/firebase';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { installSingleAudioPlayback } from './utils/audioPlayback';
@@ -36,14 +36,6 @@ export default function App() {
     () => Date.now() >= serviceWindowStart && Date.now() < serviceWindowEnd,
   );
   const [activeTab, setActiveTab] = useState<NavTab>('landing');
-  const [themeMode, setThemeMode] = useState<ThemeMode>(() => {
-    try {
-      const stored = localStorage.getItem('jaw_theme_mode_v2');
-      return (stored as ThemeMode) || 'dark';
-    } catch {
-      return 'dark';
-    }
-  });
 
   const [burstCount, setBurstCount] = useState<number>(0);
   const [burstOffering, setBurstOffering] = useState<OfferingType>('lantern');
@@ -80,7 +72,7 @@ export default function App() {
     );
   }, [currentUser?.uid]);
 
-  const isDarkMode = themeMode === 'dark';
+  const isDarkMode = true;
 
   useEffect(() => installSingleAudioPlayback(), []);
 
@@ -150,22 +142,9 @@ export default function App() {
   };
 
   useEffect(() => {
-    try {
-      localStorage.setItem('jaw_theme_mode_v2', themeMode);
-    } catch {}
-
-    if (themeMode === 'dark') {
-      document.documentElement.classList.add('dark');
-      document.body.className = 'bg-neutral-950 text-neutral-100 antialiased selection:bg-purple-600/30 selection:text-green-300';
-    } else {
-      document.documentElement.classList.remove('dark');
-      document.body.className = 'bg-stone-50 text-neutral-900 antialiased selection:bg-purple-600/20 selection:text-purple-900';
-    }
-  }, [themeMode]);
-
-  const toggleTheme = () => {
-    setThemeMode((prev) => (prev === 'dark' ? 'light' : 'dark'));
-  };
+    document.documentElement.classList.add('dark');
+    document.body.className = 'bg-neutral-950 text-neutral-100 antialiased selection:bg-purple-600/30 selection:text-green-300';
+  }, []);
 
   const handleAscendOffering = (offering: OfferingType) => {
     setBurstOffering(offering);
@@ -202,8 +181,6 @@ export default function App() {
           isDarkMode
           tracks={backgroundAudioTracks}
           mediaErrorMessage={mediaLoadError}
-          canUpload={false}
-          onOpenUploads={openMedia}
           isLoading={mediaLoading}
         />
       </>
@@ -212,6 +189,10 @@ export default function App() {
 
   // Unauthenticated visitors can access public pages; all other portals require login.
   const handleTabChange = (tab: NavTab) => {
+    if (tab === 'admin' && !canManageUploads) {
+      if (!currentUser) setIsAuthOpen(true);
+      return;
+    }
     if (!currentUser && tab !== 'landing' && tab !== 'condolences' && tab !== 'eulogy') {
       setIsAuthOpen(true);
       return;
@@ -234,13 +215,12 @@ export default function App() {
         activeTab={activeTab}
         onTabChange={handleTabChange}
         isDarkMode={isDarkMode}
-        onToggleTheme={toggleTheme}
         currentUser={currentUser}
         onOpenAuth={() => setIsAuthOpen(true)}
       />
 
       {/* Main Sanctuary Content */}
-      <main className="flex-1 relative z-10 pb-24">
+      <main className="flex-1 relative z-10 pb-32 sm:pb-24">
         {!currentUser ? (
           /* Signed-out visitors can access home, condolences, and the eulogy page. */
           <>
@@ -328,6 +308,22 @@ export default function App() {
               />
             )}
 
+            {activeTab === 'admin' && canManageUploads && (
+              <PictureGallery
+                items={mediaItems}
+                pendingItems={pendingMediaItems}
+                loading={mediaLoading}
+                error={mediaLoadError}
+                isDarkMode={isDarkMode}
+                canManage
+                onUpload={openMedia}
+                onApprove={approveMedia}
+                onReject={rejectMedia}
+                onDelete={deleteMedia}
+                adminMode
+              />
+            )}
+
             {activeTab === 'heritage' && (
               <KungFuReikiHeritage isDarkMode={isDarkMode} />
             )}
@@ -382,8 +378,8 @@ export default function App() {
         </div>
       </footer>
 
-      {currentUser && <button type="button" onClick={openMedia} aria-label="Submit a photo or video" title="Share a memory" className="fixed bottom-4 left-4 z-40 flex h-12 w-12 items-center justify-center rounded-full border border-purple-500/50 bg-neutral-900 text-purple-300 shadow-lg hover:bg-purple-900 focus-visible:outline-2 focus-visible:outline-purple-400"><ImagePlus className="h-6 w-6" /></button>}
-      {currentUser && isMediaOpen && <MediaUploadModal onClose={closeMedia} isDarkMode={isDarkMode} onGallery={() => { setIsMediaOpen(false); handleTabChange('gallery'); }} />}
+      {currentUser && !canManageUploads && <button type="button" onClick={openMedia} aria-label="Submit a photo or video" title="Share a memory" className="fixed bottom-4 left-4 z-40 flex h-12 w-12 items-center justify-center rounded-full border border-purple-500/50 bg-neutral-900 text-purple-300 shadow-lg hover:bg-purple-900 focus-visible:outline-2 focus-visible:outline-purple-400"><ImagePlus className="h-6 w-6" /></button>}
+      {currentUser && isMediaOpen && <MediaUploadModal onClose={closeMedia} isDarkMode={isDarkMode} onGallery={() => { setIsMediaOpen(false); handleTabChange(canManageUploads ? 'admin' : 'gallery'); }} />}
 
       {/* Auth Modal for Sign Up / Login and Identity Autofill */}
       <AuthModal
@@ -398,8 +394,6 @@ export default function App() {
       isDarkMode={isDarkMode}
       tracks={backgroundAudioTracks}
       mediaErrorMessage={mediaLoadError}
-      canUpload={canManageUploads}
-      onOpenUploads={openMedia}
       isLoading={mediaLoading}
     />
     </>
