@@ -25,6 +25,7 @@ import { AuthModal } from './components/AuthModal';
 import { OfferingType, ThemeMode, UserProfile } from './types/memorial';
 import { auth, testConnection } from './lib/firebase';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
+import { installSingleAudioPlayback } from './utils/audioPlayback';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<NavTab>('landing');
@@ -54,10 +55,6 @@ export default function App() {
     () => mediaItems.filter(item => item.kind === 'audio' && (item.audioPurpose || 'background') === 'background'),
     [mediaItems],
   );
-  const altarAudioTracks = useMemo(
-    () => mediaItems.filter(item => item.kind === 'audio' && item.audioPurpose === 'altar'),
-    [mediaItems],
-  );
   const meditationAudioTracks = useMemo(
     () => mediaItems.filter(item => item.kind === 'audio' && item.audioPurpose === 'meditation'),
     [mediaItems],
@@ -77,6 +74,8 @@ export default function App() {
   }, [currentUser?.uid]);
 
   const isDarkMode = themeMode === 'dark';
+
+  useEffect(() => installSingleAudioPlayback(), []);
 
   // Test database connection & listen to Firebase auth
   useEffect(() => {
@@ -267,7 +266,7 @@ export default function App() {
               <MemorialAltar
                 isDarkMode={isDarkMode}
                 onOfferingAscended={() => handleAscendOffering('incense')}
-                audioTracks={altarAudioTracks}
+                audioTracks={backgroundAudioTracks}
                 meditationTracks={meditationAudioTracks}
               />
             )}

@@ -124,6 +124,34 @@ export async function createCondolence(condolence: Omit<Condolence, 'id'>): Prom
   }
 }
 
+export async function updateCondolence(condolence: Condolence): Promise<void> {
+  if (!auth.currentUser || auth.currentUser.uid !== condolence.authorId) {
+    throw new Error('You can only edit your own condolence.');
+  }
+
+  if (condolence.id.startsWith('condolence-')) {
+    if (!getStoredCondolences().some(entry => entry.id === condolence.id && entry.authorId === auth.currentUser?.uid)) {
+      throw new Error('This locally saved condolence is no longer available.');
+    }
+    saveLocalCondolence(condolence);
+    return;
+  }
+
+  try {
+    await updateDoc(doc(db, CONDOLENCES_COL, condolence.id), {
+      authorName: condolence.authorName,
+      relationship: condolence.relationship,
+      message: condolence.message,
+      offering: condolence.offering,
+      isFamily: condolence.isFamily,
+    });
+    saveLocalCondolence(condolence);
+  } catch (err) {
+    console.error('Failed to update condolence', err);
+    throw err;
+  }
+}
+
 // Increment candle count
 export async function lightCandleForCondolence(condolenceId: string, currentCount: number): Promise<void> {
   try {
@@ -179,6 +207,29 @@ export async function deleteLegacyMilestone(id: string): Promise<void> {
     await deleteDoc(doc(db, MILESTONES_COL, id));
   } catch (err) {
     console.warn('Failed to delete milestone from Firestore', err);
+    throw err;
+  }
+}
+
+export async function updateLegacyMilestone(milestone: LegacyMilestone): Promise<void> {
+  if (!auth.currentUser || auth.currentUser.uid !== milestone.authorId) {
+    throw new Error('You can only edit your own milestone.');
+  }
+
+  try {
+    const changes = Object.fromEntries(
+      Object.entries({
+        year: milestone.year,
+        date: milestone.date || '',
+        title: milestone.title,
+        description: milestone.description,
+        category: milestone.category,
+        hanzi: milestone.hanzi || '',
+      }),
+    );
+    await updateDoc(doc(db, MILESTONES_COL, milestone.id), changes);
+  } catch (err) {
+    console.error('Failed to update milestone', err);
     throw err;
   }
 }

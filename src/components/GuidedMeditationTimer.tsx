@@ -9,14 +9,16 @@ import {
   Clock,
   Feather,
 } from 'lucide-react';
+import type { MeditationDurationMinutes } from '../lib/media';
 
 interface GuidedMeditationTimerProps {
   isDarkMode: boolean;
   onSessionComplete?: (durationMinutes: number) => void;
   onPlayAltarAudio: () => void;
+  onDurationChange?: (durationMinutes: MeditationDurationMinutes) => void;
 }
 
-const DURATION_OPTIONS = [
+const DURATION_OPTIONS: { minutes: MeditationDurationMinutes; label: string; desc: string }[] = [
   { minutes: 5, label: '5 Minutes', desc: 'Short Mindful Breath' },
   { minutes: 10, label: '10 Minutes', desc: 'Deep Stillness & Peace' },
   { minutes: 15, label: '15 Minutes', desc: 'Sacred Mindful Connection' },
@@ -38,6 +40,7 @@ export const GuidedMeditationTimer: React.FC<GuidedMeditationTimerProps> = ({
   isDarkMode,
   onSessionComplete,
   onPlayAltarAudio,
+  onDurationChange,
 }) => {
   const [selectedMinutes, setSelectedMinutes] = useState<number>(5);
   const [secondsRemaining, setSecondsRemaining] = useState<number>(5 * 60);
@@ -109,11 +112,12 @@ export const GuidedMeditationTimer: React.FC<GuidedMeditationTimerProps> = ({
     return () => clearInterval(promptInterval);
   }, [isActive]);
 
-  const handleSelectDuration = (mins: number) => {
+  const handleSelectDuration = (mins: MeditationDurationMinutes) => {
     if (isActive) return;
     setSelectedMinutes(mins);
     setSecondsRemaining(mins * 60);
     setIsCompleted(false);
+    onDurationChange?.(mins);
   };
 
   const handleStart = () => {

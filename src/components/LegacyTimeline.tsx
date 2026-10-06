@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Calendar, Shield, Sparkles, Heart, Feather, BookOpen, Trash2, CheckCircle2, Clock } from 'lucide-react';
+import { Plus, Calendar, Shield, Sparkles, Heart, Feather, BookOpen, Trash2, CheckCircle2, Clock, Pencil } from 'lucide-react';
 import { CalligraphyName } from './CalligraphyName';
 import { JohnPortrait } from './JohnPortrait';
 import { LegacyMilestone, UserProfile } from '../types/memorial';
-import { subscribeToMilestones, createLegacyMilestone, deleteLegacyMilestone } from '../services/dbService';
+import { subscribeToMilestones, createLegacyMilestone, deleteLegacyMilestone, updateLegacyMilestone } from '../services/dbService';
+import { canManageMedia } from '../lib/mediaAccess';
 
 interface LegacyTimelineProps {
   isDarkMode: boolean;
@@ -20,6 +21,8 @@ export const LegacyTimeline: React.FC<LegacyTimelineProps> = ({
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [isAddingNew, setIsAddingNew] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [editingMilestoneId, setEditingMilestoneId] = useState<string | null>(null);
+  const [formError, setFormError] = useState('');
 
   // Form fields
   const [year, setYear] = useState<string>('');
@@ -42,30 +45,69 @@ export const LegacyTimeline: React.FC<LegacyTimelineProps> = ({
     if (!year.trim() || !title.trim() || !description.trim()) return;
 
     setIsSubmitting(true);
+    setFormError('');
     try {
-      await createLegacyMilestone({
-        year: year.trim(),
-        date: date.trim() || undefined,
-        title: title.trim(),
-        description: description.trim(),
-        category,
-        hanzi: hanzi.trim() || undefined,
-        authorName: currentUser?.displayName || 'Family & Friends',
-        authorId: currentUser?.uid || undefined,
-        createdAt: new Date().toISOString(),
-      });
+      if (editingMilestoneId) {
+        const existing = milestones.find(milestone => milestone.id === editingMilestoneId);
+        if (!existing || existing.authorId !== currentUser?.uid) {
+          throw new Error('You can only edit your own milestone.');
+        }
+        await updateLegacyMilestone({
+          ...existing,
+          year: year.trim(),
+          date: date.trim() || undefined,
+          title: title.trim(),
+          description: description.trim(),
+          category,
+          hanzi: hanzi.trim() || undefined,
+        });
+      } else {
+        await createLegacyMilestone({
+          year: year.trim(),
+          date: date.trim() || undefined,
+          title: title.trim(),
+          description: description.trim(),
+          category,
+          hanzi: hanzi.trim() || undefined,
+          authorName: currentUser?.displayName || 'Family & Friends',
+          authorId: currentUser?.uid || undefined,
+          createdAt: new Date().toISOString(),
+        });
+      }
 
       // Reset form
-      setYear('');
-      setDate('');
-      setTitle('');
-      setDescription('');
+      resetMilestoneForm();
       setIsAddingNew(false);
     } catch (err) {
       console.error('Failed to create milestone', err);
+      setFormError(err instanceof Error ? err.message : 'Could not save this milestone. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const resetMilestoneForm = () => {
+    setEditingMilestoneId(null);
+    setYear('');
+    setDate('');
+    setTitle('');
+    setDescription('');
+    setCategory('family');
+    setHanzi('武');
+    setFormError('');
+  };
+
+  const handleEditMilestone = (milestone: LegacyMilestone) => {
+    setEditingMilestoneId(milestone.id);
+    setYear(milestone.year);
+    setDate(milestone.date || '');
+    setTitle(milestone.title);
+    setDescription(milestone.description);
+    setCategory(milestone.category);
+    setHanzi(milestone.hanzi || '武');
+    setFormError('');
+    setIsAddingNew(true);
+    document.getElementById('milestone-form')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   };
 
   const handleDelete = async (id: string) => {
@@ -139,12 +181,13 @@ export const LegacyTimeline: React.FC<LegacyTimelineProps> = ({
           <div className="flex items-center justify-between pb-3 border-b border-neutral-800 mb-4">
             <h3 className="text-base font-serif font-semibold text-neutral-100 flex items-center gap-2">
               <Calendar className="h-4 w-4 text-purple-400" />
-              Record a Significant Milestone or Memory
+              {editingMilestoneId ? 'Edit Milestone or Memory' : 'Record a Significant Milestone or Memory'}
             </h3>
             <span className="text-xs text-emerald-400 font-mono">Live Firestore Sync</span>
           </div>
 
-          <form onSubmit={handleCreateMilestone} className="space-y-4">
+          <form id="milestone-form" onSubmit={handleCreateMilestone} className="space-y-4">
+            {formError && <p role="alert" className="text-xs text-red-400">{formError}</p>}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
                 <label className="block text-xs font-medium uppercase tracking-wider text-neutral-400 mb-1">
@@ -241,7 +284,7 @@ export const LegacyTimeline: React.FC<LegacyTimelineProps> = ({
             <div className="flex items-center justify-end gap-2 pt-2">
               <button
                 type="button"
-                onClick={() => setIsAddingNew(false)}
+                onClick={() => { resetMilestoneForm(); setIsAddingNew(false); }}
                 className="px-4 py-2 rounded-lg text-xs text-neutral-400 hover:text-neutral-200"
               >
                 Cancel
@@ -251,7 +294,7 @@ export const LegacyTimeline: React.FC<LegacyTimelineProps> = ({
                 disabled={isSubmitting || !year.trim() || !title.trim() || !description.trim()}
                 className="px-5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium transition-colors disabled:opacity-40 shadow-sm"
               >
-                {isSubmitting ? 'Recording...' : 'Save Milestone'}
+                {isSubmitting ? 'Saving...' : editingMilestoneId ? 'Save Changes' : 'Save Milestone'}
               </button>
             </div>
           </form>
@@ -339,7 +382,17 @@ export const LegacyTimeline: React.FC<LegacyTimelineProps> = ({
                         <span>{cat.label}</span>
                       </span>
 
-                      {currentUser && (
+                      {currentUser?.uid === m.authorId && (
+                        <button
+                          onClick={() => handleEditMilestone(m)}
+                          className="text-neutral-500 hover:text-purple-300 p-1 transition-colors"
+                          title="Edit your milestone"
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </button>
+                      )}
+
+                      {currentUser && (currentUser.uid === m.authorId || canManageMedia(currentUser)) && (
                         <button
                           onClick={() => handleDelete(m.id)}
                           className="text-neutral-500 hover:text-red-400 p-1 transition-colors"

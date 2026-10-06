@@ -38,7 +38,7 @@ service cloud.firestore {
             || isMediaManager()
             || (resource.data.ownerId == request.auth.uid && resource.data.status == 'pending')));
       allow create: if isSignedIn()
-        && request.resource.data.keys().hasOnly(['ownerId', 'kind', 'title', 'path', 'contentType', 'size', 'createdAt', 'status', 'approvedAt', 'audioPurpose', 'visibility'])
+        && request.resource.data.keys().hasOnly(['ownerId', 'kind', 'title', 'path', 'contentType', 'size', 'createdAt', 'status', 'approvedAt', 'audioPurpose', 'visibility', 'meditationDurationMinutes'])
         && request.resource.data.ownerId == request.auth.uid
         && request.resource.data.kind in ['picture', 'video', 'audio']
         && isValidString(request.resource.data.title, 1, 150)
@@ -59,19 +59,27 @@ service cloud.firestore {
           && isMediaManager()
           && request.resource.data.status == 'approved'
           && request.resource.data.approvedAt == request.time
-          && request.resource.data.audioPurpose in ['background', 'altar', 'meditation']
+          && request.resource.data.audioPurpose in ['background', 'meditation']
+          && ((request.resource.data.audioPurpose == 'meditation'
+              && request.resource.data.meditationDurationMinutes in [3, 5, 10, 15])
+            || (request.resource.data.audioPurpose != 'meditation'
+              && !request.resource.data.keys().hasAny(['meditationDurationMinutes'])))
           && ((request.resource.data.audioPurpose == 'background' && request.resource.data.visibility == 'public')
-            || (request.resource.data.audioPurpose in ['altar', 'meditation'] && request.resource.data.visibility == 'private'))
+            || (request.resource.data.audioPurpose == 'meditation' && request.resource.data.visibility == 'private'))
           && request.resource.data.contentType in ['audio/mpeg', 'audio/mp4', 'audio/wav', 'audio/x-wav', 'audio/ogg', 'audio/webm', 'audio/flac']
           ));
       allow update: if isMediaManager()
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'approvedAt', 'visibility'])
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'approvedAt', 'visibility', 'audioPurpose'])
         && request.resource.data.status == 'approved'
         && request.resource.data.approvedAt == request.time
+        && request.resource.data.get('audioPurpose', resource.data.get('audioPurpose', 'background')) in ['background', 'altar', 'meditation']
         && request.resource.data.get('visibility', resource.data.get('visibility', 'private')) in ['public', 'private']
         && (request.resource.data.get('visibility', resource.data.get('visibility', 'private')) == 'private'
           || (resource.data.kind == 'audio'
-            && resource.data.get('audioPurpose', 'background') == 'background'));
+            && request.resource.data.get('audioPurpose', resource.data.get('audioPurpose', 'background')) == 'background'))
+        && (resource.data.get('audioPurpose', 'background') != 'altar'
+          || (request.resource.data.get('audioPurpose', resource.data.get('audioPurpose', 'background')) == 'background'
+            && request.resource.data.get('visibility', resource.data.get('visibility', 'private')) == 'public'));
       allow delete: if isMediaManager();
     }
 
@@ -135,6 +143,17 @@ service cloud.firestore {
         && request.resource.data.candlesLit == 1
         && request.resource.data.isFamily is bool;
       allow update: if isSignedIn()
+        && resource.data.authorId == request.auth.uid
+        && request.resource.data.authorId == resource.data.authorId
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.get('candlesLit', 1) == resource.data.get('candlesLit', 1)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['authorName', 'relationship', 'message', 'offering', 'isFamily'])
+        && isValidString(request.resource.data.authorName, 1, 100)
+        && isValidString(request.resource.data.relationship, 1, 100)
+        && isValidString(request.resource.data.message, 1, 5000)
+        && validOffering(request.resource.data.offering)
+        && request.resource.data.isFamily is bool;
+      allow update: if isSignedIn()
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['candlesLit'])
         && request.resource.data.candlesLit is int
         && request.resource.data.candlesLit == resource.data.get('candlesLit', 0) + 1;
@@ -151,7 +170,16 @@ service cloud.firestore {
         && isValidString(request.resource.data.description, 1, 3000)
         && request.resource.data.category in ['family', 'friends', 'life_journey']
         && isValidString(request.resource.data.createdAt, 1, 40);
-      allow update: if false;
+      allow update: if isSignedIn()
+        && resource.data.authorId == request.auth.uid
+        && request.resource.data.authorId == resource.data.authorId
+        && request.resource.data.authorName == resource.data.authorName
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['year', 'date', 'title', 'description', 'category', 'hanzi'])
+        && isValidString(request.resource.data.year, 1, 20)
+        && isValidString(request.resource.data.title, 1, 150)
+        && isValidString(request.resource.data.description, 1, 3000)
+        && request.resource.data.category in ['family', 'friends', 'life_journey'];
       allow delete: if isSignedIn() && (resource.data.authorId == request.auth.uid || isMediaManager());
     }
 

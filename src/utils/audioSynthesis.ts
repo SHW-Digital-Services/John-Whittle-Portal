@@ -8,6 +8,13 @@ let audioCtx: AudioContext | null = null;
 let ambientGainNode: GainNode | null = null;
 let ambientTimer: number | null = null;
 let isAmbientRunning = false;
+const activeAudioNodes = new Set<AudioScheduledSourceNode>();
+const scheduledChimeTimers = new Set<number>();
+
+function trackAudioNode<T extends AudioScheduledSourceNode>(node: T): void {
+  activeAudioNodes.add(node);
+  node.onended = () => activeAudioNodes.delete(node);
+}
 
 function getAudioContext(): AudioContext {
   if (!audioCtx) {
@@ -46,11 +53,13 @@ export function playSingingBowlChime(fundamental = 216, duration = 4.5, masterGa
       const gain = ctx.createGain();
 
       osc.type = 'sine';
+      trackAudioNode(osc);
       osc.frequency.setValueAtTime(fundamental * freqMult, now);
 
       // Subtle vibrato/detune beating
       const lfo = ctx.createOscillator();
       const lfoGain = ctx.createGain();
+      trackAudioNode(lfo);
       lfo.frequency.setValueAtTime(1.5, now);
       lfoGain.gain.setValueAtTime(1.2, now);
       lfo.connect(osc.frequency);
@@ -87,6 +96,7 @@ export function playPentatonicChime(volume = 0.2): void {
     const gain = ctx.createGain();
 
     osc.type = 'sine';
+    trackAudioNode(osc);
     osc.frequency.setValueAtTime(note, now);
 
     gain.gain.setValueAtTime(volume, now);
@@ -142,10 +152,25 @@ export function stopAmbientSoundscape(): void {
   }
 }
 
-export function setAmbientVolume(volume: number): void {
-  if (ambientGainNode && audioCtx) {
-    ambientGainNode.gain.setValueAtTime(Math.max(0, Math.min(1, volume)), audioCtx.currentTime);
-  }
+export function stopSynthesizedAudio(): void {
+  activeAudioNodes.forEach((node) => {
+    try {
+      node.stop();
+    } catch (error) {
+      console.warn('Could not stop a synthesized audio node', error);
+    }
+  });
+  activeAudioNodes.clear();
+  scheduledChimeTimers.forEach(timer => window.clearTimeout(timer));
+  scheduledChimeTimers.clear();
+}
+
+function scheduleChime(fundamental: number, delay: number, duration: number, gain: number): void {
+  const timer = window.setTimeout(() => {
+    scheduledChimeTimers.delete(timer);
+    playSingingBowlChime(fundamental, duration, gain);
+  }, delay);
+  scheduledChimeTimers.add(timer);
 }
 
 /**
@@ -153,6 +178,12 @@ export function setAmbientVolume(volume: number): void {
  */
 export function playMeditationEndBell(): void {
   playSingingBowlChime(216, 5.0, 0.28);
-  setTimeout(() => playSingingBowlChime(324, 5.5, 0.24), 1400);
-  setTimeout(() => playSingingBowlChime(432, 6.5, 0.22), 2800);
+  scheduleChime(324, 1400, 5.5, 0.24);
+  scheduleChime(432, 2800, 6.5, 0.22);
+}
+
+export function setAmbientVolume(volume: number): void {
+  if (ambientGainNode && audioCtx) {
+    ambientGainNode.gain.setValueAtTime(Math.max(0, Math.min(1, volume)), audioCtx.currentTime);
+  }
 }

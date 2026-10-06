@@ -18,19 +18,26 @@ export interface MemorialMedia {
   createdAt?: { seconds: number; nanoseconds: number };
   status?: 'pending' | 'approved';
   audioPurpose?: 'background' | 'altar' | 'meditation';
+  meditationDurationMinutes?: 3 | 5 | 10 | 15;
   visibility?: 'public' | 'private';
 }
+
+export type MeditationDurationMinutes = 3 | 5 | 10 | 15;
 
 export async function uploadMedia(
   file: File,
   kind: MediaKind,
   title: string,
   onProgress: (value: number) => void,
-  audioPurpose: 'background' | 'altar' | 'meditation' = 'background',
+  audioPurpose: 'background' | 'meditation' = 'background',
+  meditationDurationMinutes?: MeditationDurationMinutes,
 ) {
   const user = auth.currentUser;
   if (!user) throw new Error('Please sign in before uploading media.');
   if (kind === 'audio' && !canManageMedia(user)) throw new Error('Only the verified portal owner can upload audio.');
+  if (kind === 'audio' && audioPurpose === 'meditation' && ![3, 5, 10, 15].includes(meditationDurationMinutes ?? 0)) {
+    throw new Error('Choose a stillness duration for this meditation track.');
+  }
   validateMedia(file, kind);
   const mediaDoc = doc(collection(db, 'media'));
   const path = `memorial-media/${user.uid}/${kind}/${mediaDoc.id}`;
@@ -52,6 +59,7 @@ export async function uploadMedia(
       ...(kind === 'audio' ? {
         audioPurpose,
         visibility: audioPurpose === 'background' ? 'public' : 'private',
+        ...(audioPurpose === 'meditation' ? { meditationDurationMinutes } : {}),
       } : {}),
       createdAt: serverTimestamp(),
       ...(kind === 'audio' ? { approvedAt: serverTimestamp() } : {}),
@@ -93,13 +101,15 @@ export function subscribeMedia(
     onPending(manager ? items.filter(item => item.status === 'pending') : []);
     if (manager) {
       items.filter(item => item.status === undefined
-        || (item.kind === 'audio' && item.status === 'approved' && item.visibility === undefined)).forEach(item => {
+        || (item.kind === 'audio' && item.status === 'approved' && item.visibility === undefined)
+        || (item.kind === 'audio' && item.audioPurpose === 'altar')).forEach(item => {
         if (migrating.has(item.id)) return;
         migrating.add(item.id);
         void updateDoc(doc(db, 'media', item.id), {
           status: 'approved',
           approvedAt: serverTimestamp(),
-          visibility: item.kind === 'audio' && (item.audioPurpose || 'background') === 'background' ? 'public' : 'private',
+          visibility: item.kind === 'audio' && (item.audioPurpose || 'background') !== 'meditation' ? 'public' : 'private',
+          ...(item.kind === 'audio' && item.audioPurpose === 'altar' ? { audioPurpose: 'background' } : {}),
         })
           .catch(onError)
           .finally(() => migrating.delete(item.id));

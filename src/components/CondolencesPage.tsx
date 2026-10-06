@@ -4,6 +4,7 @@ import {
   Heart,
   MessageSquare,
   Feather,
+  Pencil,
   Sparkles,
   Send,
   CheckCircle2,
@@ -28,6 +29,7 @@ import {
   createCondolence,
   lightCandleForCondolence,
   subscribeToCondolences,
+  updateCondolence,
 } from '../services/dbService';
 
 interface CondolencesPageProps {
@@ -50,6 +52,8 @@ export const CondolencesPage: React.FC<CondolencesPageProps> = ({
   const [selectedOffering, setSelectedOffering] = useState<OfferingType>('candle');
   const [isFamilyMember, setIsFamilyMember] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [editingCondolenceId, setEditingCondolenceId] = useState<string | null>(null);
+  const [formError, setFormError] = useState('');
   const [showSuccessToast, setShowSuccessToast] = useState<boolean>(false);
   const [filterRole, setFilterRole] = useState<'all' | 'family' | 'friends_students'>('all');
 
@@ -121,29 +125,68 @@ export const CondolencesPage: React.FC<CondolencesPageProps> = ({
     if (!authorName.trim() || !message.trim()) return;
 
     setIsSubmitting(true);
-    const newEntry: Omit<Condolence, 'id'> = {
-      authorId: currentUser?.uid || undefined,
-      authorName: authorName.trim(),
-      relationship: relationship.trim() || 'Visitor & Friend',
-      message: message.trim(),
-      offering: selectedOffering,
-      createdAt: new Date().toISOString(),
-      candlesLit: 1,
-      isFamily: isFamilyMember,
-    };
+    setFormError('');
+    try {
+      if (editingCondolenceId) {
+        const existing = condolences.find(condolence => condolence.id === editingCondolenceId);
+        if (!existing || existing.authorId !== currentUser?.uid) {
+          throw new Error('You can only edit your own condolence.');
+        }
+        await updateCondolence({
+          ...existing,
+          authorName: authorName.trim(),
+          relationship: relationship.trim() || 'Visitor & Friend',
+          message: message.trim(),
+          offering: selectedOffering,
+          isFamily: isFamilyMember,
+        });
+        setEditingCondolenceId(null);
+      } else {
+        const newEntry: Omit<Condolence, 'id'> = {
+          authorId: currentUser?.uid || undefined,
+          authorName: authorName.trim(),
+          relationship: relationship.trim() || 'Visitor & Friend',
+          message: message.trim(),
+          offering: selectedOffering,
+          createdAt: new Date().toISOString(),
+          candlesLit: 1,
+          isFamily: isFamilyMember,
+        };
+        await createCondolence(newEntry);
+        playSingingBowlChime(261.6, 4.0, 0.25);
+        onTributeLit();
+      }
 
-    await createCondolence(newEntry);
+      setMessage('');
+      setShowSuccessToast(true);
+      setTimeout(() => setShowSuccessToast(false), 4500);
+    } catch (error) {
+      console.error('Could not save condolence', error);
+      setFormError(error instanceof Error ? error.message : 'Could not save your condolence. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
-    playSingingBowlChime(261.6, 4.0, 0.25);
-    onTributeLit();
+  const handleEditCondolence = (condolence: Condolence) => {
+    setEditingCondolenceId(condolence.id);
+    setAuthorName(condolence.authorName);
+    setRelationship(condolence.relationship);
+    setMessage(condolence.message);
+    setSelectedOffering(condolence.offering);
+    setIsFamilyMember(Boolean(condolence.isFamily));
+    setFormError('');
+    document.getElementById('condolence-form')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  };
 
+  const handleCancelCondolenceEdit = () => {
+    setEditingCondolenceId(null);
+    setAuthorName(currentUser?.displayName || '');
+    setRelationship(currentUser?.relationship || '');
     setMessage('');
-    setIsSubmitting(false);
-    setShowSuccessToast(true);
-
-    setTimeout(() => {
-      setShowSuccessToast(false);
-    }, 4500);
+    setSelectedOffering('candle');
+    setIsFamilyMember(false);
+    setFormError('');
   };
 
   const handleLightCandle = async (id: string, currentCount: number) => {
@@ -337,6 +380,7 @@ export const CondolencesPage: React.FC<CondolencesPageProps> = ({
           {currentUser ? (
             /* Active Form for Authenticated Users */
             <div
+              id="condolence-form"
               className={`rounded-2xl border p-6 backdrop-blur-md sticky top-20 transition-all shadow-lg ${
                 isDarkMode
                   ? 'bg-neutral-900/90 border-neutral-800 text-neutral-100'
@@ -346,7 +390,7 @@ export const CondolencesPage: React.FC<CondolencesPageProps> = ({
               <div className="flex items-center gap-2 mb-4 pb-3 border-b border-neutral-800">
                 <Feather className="h-4 w-4 text-purple-400" />
                 <h3 className="text-base font-serif font-semibold text-neutral-100">
-                  Leave Your Condolence
+                  {editingCondolenceId ? 'Edit Your Condolence' : 'Leave Your Condolence'}
                 </h3>
               </div>
 
@@ -358,6 +402,7 @@ export const CondolencesPage: React.FC<CondolencesPageProps> = ({
               )}
 
               <form onSubmit={handleAddCondolence} className="space-y-4">
+                {formError && <p role="alert" className="text-xs text-red-400">{formError}</p>}
                 <div>
                   <div className="flex items-center justify-between mb-1">
                     <label className="block text-xs font-medium uppercase tracking-wider text-neutral-400">
@@ -450,8 +495,16 @@ export const CondolencesPage: React.FC<CondolencesPageProps> = ({
                   className="w-full inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg bg-gradient-to-r from-purple-600 to-emerald-600 text-white font-medium text-xs sm:text-sm hover:opacity-95 transition-opacity disabled:opacity-50 shadow-md shadow-purple-950/40"
                 >
                   <Send className="h-4 w-4" />
-                  <span>{isSubmitting ? 'Posting...' : 'Post Condolence & Light Tribute'}</span>
+                  <span>{isSubmitting ? 'Saving...' : editingCondolenceId ? 'Save Changes' : 'Post Condolence & Light Tribute'}</span>
                 </button>
+                {editingCondolenceId && <button
+                  type="button"
+                  onClick={handleCancelCondolenceEdit}
+                  disabled={isSubmitting}
+                  className="w-full text-xs text-neutral-400 hover:text-neutral-200"
+                >
+                  Cancel editing
+                </button>}
               </form>
             </div>
           ) : (
@@ -609,7 +662,18 @@ export const CondolencesPage: React.FC<CondolencesPageProps> = ({
                               })}
                             </span>
                             <span>·</span>
-                            <button
+                              {currentUser?.uid === c.authorId && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleEditCondolence(c)}
+                                  className="inline-flex items-center gap-1 text-purple-300 hover:text-purple-200"
+                                  title="Edit your condolence"
+                                >
+                                  <Pencil className="h-3 w-3" />
+                                  Edit
+                                </button>
+                              )}
+                              <button
                               onClick={() => handleLightCandle(c.id, c.candlesLit || 1)}
                               className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-neutral-900 border border-amber-900/40 text-amber-300 hover:bg-amber-950/40 transition-colors"
                               title={currentUser ? 'Light a candle in memory' : 'Sign in to light a candle'}
@@ -741,9 +805,22 @@ export const CondolencesPage: React.FC<CondolencesPageProps> = ({
                           </div>
                         </div>
 
-                        <span className="text-xl" title={tribute.name}>
-                          {tribute.icon}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          {currentUser?.uid === c.authorId && (
+                            <button
+                              type="button"
+                              onClick={() => handleEditCondolence(c)}
+                              className="inline-flex items-center gap-1 text-xs text-purple-300 hover:text-purple-200"
+                              title="Edit your condolence"
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                              Edit
+                            </button>
+                          )}
+                          <span className="text-xl" title={tribute.name}>
+                            {tribute.icon}
+                          </span>
+                        </div>
                       </div>
 
                       {/* Message Prose */}

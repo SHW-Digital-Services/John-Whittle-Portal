@@ -10,7 +10,8 @@ interface Props { onClose: () => void; onGallery: () => void; isDarkMode: boolea
 export function MediaUploadModal({ onClose, onGallery, isDarkMode }: Props) {
   const canUploadAudio = canManageMedia(auth.currentUser);
   const [kind, setKind] = useState<MediaKind>('picture');
-  const [audioPurpose, setAudioPurpose] = useState<'background' | 'altar' | 'meditation'>('background');
+  const [audioPurpose, setAudioPurpose] = useState<'background' | 'meditation'>('background');
+  const [meditationDurationMinutes, setMeditationDurationMinutes] = useState<3 | 5 | 10 | 15>(5);
   const [file, setFile] = useState<File | null>(null);
   const [title, setTitle] = useState('');
   const [busy, setBusy] = useState(false);
@@ -41,9 +42,16 @@ export function MediaUploadModal({ onClose, onGallery, isDarkMode }: Props) {
     if (!file || busyRef.current) return;
     busyRef.current = true; setBusy(true); setError(''); setMessage(''); setProgress(0);
     try {
-      await uploadMedia(file, kind, title, setProgress, audioPurpose);
+      await uploadMedia(
+        file,
+        kind,
+        title,
+        setProgress,
+        audioPurpose,
+        audioPurpose === 'meditation' ? meditationDurationMinutes : undefined,
+      );
       setMessage(kind === 'audio'
-        ? `Audio track added for ${audioPurpose === 'background' ? 'background music' : audioPurpose === 'altar' ? 'altar interactions' : 'meditation'}.`
+        ? `Audio track added for ${audioPurpose === 'background' ? 'background music' : `${meditationDurationMinutes}-minute meditation`}.`
         : 'Your memory was submitted for approval.');
       setFile(null); setTitle('');
       if (inputRef.current) inputRef.current.value = '';
@@ -67,10 +75,16 @@ export function MediaUploadModal({ onClose, onGallery, isDarkMode }: Props) {
         <div><label htmlFor="media-title" className="block text-sm mb-1">{kind === 'audio' ? 'Track title' : 'Caption'} (optional)</label>
           <input id="media-title" value={title} onChange={e => setTitle(e.target.value)} maxLength={150} disabled={busy} className="w-full rounded-lg border border-neutral-500 bg-transparent p-2" /></div>
         {kind === 'audio' && <div><label htmlFor="audio-purpose" className="block text-sm mb-1">Use this audio for</label>
-          <select id="audio-purpose" value={audioPurpose} disabled={busy} onChange={e => setAudioPurpose(e.target.value as 'background' | 'altar' | 'meditation')} className="w-full rounded-lg border border-neutral-500 bg-transparent p-2">
+          <select id="audio-purpose" value={audioPurpose} disabled={busy} onChange={e => setAudioPurpose(e.target.value as 'background' | 'meditation')} className="w-full rounded-lg border border-neutral-500 bg-transparent p-2">
             <option value="background" className="text-neutral-900">Background music</option>
-            <option value="altar" className="text-neutral-900">Altar sound</option>
             <option value="meditation" className="text-neutral-900">Meditation sound</option>
+          </select></div>}
+        {kind === 'audio' && audioPurpose === 'meditation' && <div><label htmlFor="meditation-duration" className="block text-sm mb-1">Stillness duration</label>
+          <select id="meditation-duration" value={meditationDurationMinutes} disabled={busy} onChange={e => setMeditationDurationMinutes(Number(e.target.value) as 3 | 5 | 10 | 15)} className="w-full rounded-lg border border-neutral-500 bg-transparent p-2">
+            <option value={3} className="text-neutral-900">3 minutes</option>
+            <option value={5} className="text-neutral-900">5 minutes</option>
+            <option value={10} className="text-neutral-900">10 minutes</option>
+            <option value={15} className="text-neutral-900">15 minutes</option>
           </select></div>}
         <div><label htmlFor="media-file" className="block text-sm mb-1">{kind === 'audio' ? 'Choose an audio track' : `Choose a ${kind === 'picture' ? 'photo' : 'video'}`}</label>
           <input ref={inputRef} id="media-file" type="file" required disabled={busy} accept={kind === 'audio' ? AUDIO_TYPES.join(',') : kind === 'picture' ? 'image/*' : 'video/*'} onChange={e => {

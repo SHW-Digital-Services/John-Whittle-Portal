@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Flame, Bell, Coffee, Sparkles, Flower2, Heart, Award, Clock } from 'lucide-react';
 import { CalligraphyName } from './CalligraphyName';
 import { JohnPortrait } from './JohnPortrait';
@@ -6,7 +6,9 @@ import { MemorialShrineState } from '../types/memorial';
 import { subscribeToShrineState, updateRemoteShrine } from '../services/dbService';
 import { IncenseBurner } from './IncenseBurner';
 import { GuidedMeditationTimer } from './GuidedMeditationTimer';
-import { loadMediaBlob, mediaError, MemorialMedia } from '../lib/media';
+import { loadMediaBlob, mediaError, MemorialMedia, MeditationDurationMinutes } from '../lib/media';
+import { pauseAllAudio } from '../utils/audioPlayback';
+import { stopAmbientSoundscape } from '../utils/audioSynthesis';
 
 function useAltarTrack(tracks: MemorialMedia[]) {
   const [selectedAudioId, setSelectedAudioId] = useState('');
@@ -66,8 +68,13 @@ export const MemorialAltar: React.FC<MemorialAltarProps> = ({ isDarkMode, onOffe
     meditationsCompletedCount: 0,
   });
   const [activeAction, setActiveAction] = useState<string | null>(null);
+  const [selectedMeditationDuration, setSelectedMeditationDuration] = useState<MeditationDurationMinutes>(5);
   const altarAudio = useAltarTrack(audioTracks);
-  const meditationAudio = useAltarTrack(meditationTracks);
+  const tracksForSelectedDuration = useMemo(
+    () => meditationTracks.filter(track => track.meditationDurationMinutes === selectedMeditationDuration),
+    [meditationTracks, selectedMeditationDuration],
+  );
+  const meditationAudio = useAltarTrack(tracksForSelectedDuration);
 
   useEffect(() => {
     const unsubscribe = subscribeToShrineState((updated) => {
@@ -183,24 +190,24 @@ export const MemorialAltar: React.FC<MemorialAltarProps> = ({ isDarkMode, onOffe
 
         <div className="relative z-10 mx-auto mt-6 grid max-w-2xl grid-cols-1 gap-4 text-left sm:grid-cols-2">
           <div className="space-y-2">
-            <label htmlFor="altar-audio-track" className="block text-xs text-neutral-300">Altar sound</label>
+            <label htmlFor="altar-audio-track" className="block text-xs text-neutral-300">Background music for altar actions</label>
             <select id="altar-audio-track" value={altarAudio.selectedAudioId} disabled={!audioTracks.length} onChange={event => altarAudio.setSelectedAudioId(event.target.value)} className="w-full rounded-lg border border-neutral-700 bg-neutral-950 p-2 text-sm text-neutral-100">
               {audioTracks.length
                 ? audioTracks.map(track => <option key={track.id} value={track.id}>{track.title}</option>)
-                : <option value="">No altar audio uploaded yet</option>}
+                : <option value="">No background music uploaded yet</option>}
             </select>
             {altarAudio.audioError && <p role="alert" className="text-xs text-red-400">{altarAudio.audioError}</p>}
-            {audioTracks.length === 0 && <p className="text-xs text-neutral-500">The portal owner can add altar audio from the upload button.</p>}
+            {audioTracks.length === 0 && <p className="text-xs text-neutral-500">The portal owner can add background music from the upload button.</p>}
           </div>
           <div className="space-y-2">
-            <label htmlFor="meditation-audio-track" className="block text-xs text-neutral-300">Meditation sound</label>
-            <select id="meditation-audio-track" value={meditationAudio.selectedAudioId} disabled={!meditationTracks.length} onChange={event => meditationAudio.setSelectedAudioId(event.target.value)} className="w-full rounded-lg border border-neutral-700 bg-neutral-950 p-2 text-sm text-neutral-100">
-              {meditationTracks.length
-                ? meditationTracks.map(track => <option key={track.id} value={track.id}>{track.title}</option>)
+            <label htmlFor="meditation-audio-track" className="block text-xs text-neutral-300">Meditation sound for {selectedMeditationDuration}-minute stillness</label>
+            <select id="meditation-audio-track" value={meditationAudio.selectedAudioId} disabled={!tracksForSelectedDuration.length} onChange={event => meditationAudio.setSelectedAudioId(event.target.value)} className="w-full rounded-lg border border-neutral-700 bg-neutral-950 p-2 text-sm text-neutral-100">
+              {tracksForSelectedDuration.length
+                ? tracksForSelectedDuration.map(track => <option key={track.id} value={track.id}>{track.title}</option>)
                 : <option value="">No meditation audio uploaded yet</option>}
             </select>
             {meditationAudio.audioError && <p role="alert" className="text-xs text-red-400">{meditationAudio.audioError}</p>}
-            {meditationTracks.length === 0 && <p className="text-xs text-neutral-500">The portal owner can add meditation audio from the upload button.</p>}
+            {tracksForSelectedDuration.length === 0 && <p className="text-xs text-neutral-500">The portal owner can add a meditation track for this duration from the upload button.</p>}
           </div>
         </div>
         <audio ref={altarAudio.audioRef} src={altarAudio.audioUrl || undefined} preload="auto" onError={() => altarAudio.setAudioError('The selected altar audio could not be played.')} />
@@ -261,6 +268,11 @@ export const MemorialAltar: React.FC<MemorialAltarProps> = ({ isDarkMode, onOffe
           isDarkMode={isDarkMode}
           onSessionComplete={handleMeditationComplete}
           onPlayAltarAudio={meditationAudio.play}
+          onDurationChange={duration => {
+            pauseAllAudio();
+            stopAmbientSoundscape();
+            setSelectedMeditationDuration(duration);
+          }}
         />
       </section>
     </div>
